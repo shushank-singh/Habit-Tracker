@@ -1,16 +1,34 @@
-// Export SVG and PNG utilities for A3 Landscape Habit Tracker (1260 x 891)
+// Export SVG and PNG utilities formatted for A4 Landscape (297mm x 210mm)
 
-export function exportToSVG(svgElement, filename = 'habit-tracker-a3.svg') {
+const A4_PNG_WIDTH = 3508;  // 297mm at 300 DPI
+const A4_PNG_HEIGHT = 2480; // 210mm at 300 DPI
+
+function normalizeSvgAttributes(source, widthAttr, heightAttr) {
+  let result = source;
+
+  if (!result.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+    result = result.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  if (!result.match(/^<svg[^>]+xmlns:xlink="http:\/\/www\.w3\.org\/1999\/xlink"/)) {
+    result = result.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+  }
+
+  // Replace existing width/height attributes on root <svg> if present, else insert them
+  result = result.replace(/^(<svg\b[^>]*?)\s+width="[^"]*"/i, '$1');
+  result = result.replace(/^(<svg\b[^>]*?)\s+height="[^"]*"/i, '$1');
+  result = result.replace(/^<svg/, `<svg width="${widthAttr}" height="${heightAttr}"`);
+
+  return result;
+}
+
+export function exportToSVG(svgElement, filename = 'habit-tracker-a4.svg') {
   if (!svgElement) return;
   const serializer = new XMLSerializer();
-  let source = serializer.serializeToString(svgElement);
-
-  if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
-    source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-  }
-  if (!source.match(/^<svg[^>]+xmlns:xlink="http:\/\/www\.w3\.org\/1999\/xlink"/)) {
-    source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
-  }
+  let source = normalizeSvgAttributes(
+    serializer.serializeToString(svgElement),
+    '297mm',
+    '210mm'
+  );
 
   source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
 
@@ -23,22 +41,14 @@ export function exportToSVG(svgElement, filename = 'habit-tracker-a3.svg') {
   document.body.removeChild(downloadLink);
 }
 
-export function exportToPNG(svgElement, filename = 'habit-tracker-a3.png', scale = 3) {
+export function exportToPNG(svgElement, filename = 'habit-tracker-a4.png') {
   if (!svgElement) return;
   const serializer = new XMLSerializer();
-  let source = serializer.serializeToString(svgElement);
-
-  if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
-    source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-  }
-
-  const width = svgElement.viewBox.baseVal.width || 1260;
-  const height = svgElement.viewBox.baseVal.height || 891;
-
-  // Ensure explicit width/height attributes for consistent canvas rasterization
-  if (!source.match(/^<svg[^>]+width=/)) {
-    source = source.replace(/^<svg/, `<svg width="${width}" height="${height}"`);
-  }
+  const source = normalizeSvgAttributes(
+    serializer.serializeToString(svgElement),
+    `${A4_PNG_WIDTH}`,
+    `${A4_PNG_HEIGHT}`
+  );
 
   const img = new Image();
   const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
@@ -46,15 +56,13 @@ export function exportToPNG(svgElement, filename = 'habit-tracker-a3.png', scale
 
   img.onload = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = width * scale;
-    canvas.height = height * scale;
+    canvas.width = A4_PNG_WIDTH;
+    canvas.height = A4_PNG_HEIGHT;
 
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0, width, height);
+    ctx.drawImage(img, 0, 0, A4_PNG_WIDTH, A4_PNG_HEIGHT);
 
     URL.revokeObjectURL(url);
 

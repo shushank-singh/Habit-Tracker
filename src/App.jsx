@@ -92,7 +92,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
               <span>
-                <strong>Interactive A3 Sheet:</strong> Click any wheel cell or Weekly/Monthly box to toggle checkmarks. Click any colored bar, Month line, Weekly/Monthly line, or Notes line to type directly.
+                <strong>Interactive A4 Sheet:</strong> Click any wheel cell or Weekly/Monthly box to toggle checkmarks. Click any colored bar, Month line, Weekly/Monthly line, or Notes line to type directly.
               </span>
             </div>
             <button

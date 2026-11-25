@@ -354,9 +354,9 @@ body {
   }
 }
 
-/* A3 Landscape Paper Page Styling (420mm x 297mm) */
+/* A4 Landscape Paper Page Styling (297mm x 210mm — same ISO ratio as A3) */
 .paper-page {
-  aspect-ratio: 420 / 297;
+  aspect-ratio: 297 / 210;
   box-shadow:
     0 14px 32px -6px rgba(0, 0, 0, 0.14),
     0 8px 14px -6px rgba(0, 0, 0, 0.08),
@@ -410,7 +410,7 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Print Styles — A3 Landscape */
+/* Print Styles — A4 Landscape */
 @media print {
   html, body {
     background: #ffffff !important;
@@ -442,7 +442,7 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    aspect-ratio: 420 / 297 !important;
+    aspect-ratio: 297 / 210 !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
@@ -452,7 +452,7 @@ body {
   }
 
   @page {
-    size: A3 landscape;
+    size: A4 landscape;
     margin: 0;
   }
 }

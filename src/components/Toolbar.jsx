@@ -81,13 +81,13 @@ export default function Toolbar({
 
   const handleExportPNG = () => {
     if (svgRef.current) {
-      exportToPNG(svgRef.current, `${fileSlug}-a3-habit-tracker.png`, 3);
+      exportToPNG(svgRef.current, `${fileSlug}-a4-habit-tracker.png`);
     }
   };
 
   const handleExportSVG = () => {
     if (svgRef.current) {
-      exportToSVG(svgRef.current, `${fileSlug}-a3-habit-tracker.svg`);
+      exportToSVG(svgRef.current, `${fileSlug}-a4-habit-tracker.svg`);
     }
   };
 
@@ -208,7 +208,7 @@ export default function Toolbar({
           <span className="font-serif italic font-bold tb-brand-title">
             Habit Tracker
           </span>
-          <span className="tb-badge-a3">A3</span>
+          <span className="tb-badge-a3">A4</span>
         </div>
 
         {/* Desktop-only center controls (single-row layout >= 1024px) */}
@@ -228,7 +228,7 @@ export default function Toolbar({
             <button
               onClick={handleExportPNG}
               className="tb-seg-btn"
-              title="Download high-resolution A3 PNG"
+              title="Download A4 Landscape 300 DPI PNG (3508 × 2480)"
             >
               <Download className="w-3.5 h-3.5 shrink-0" />
               <span>PNG</span>
@@ -237,7 +237,7 @@ export default function Toolbar({
             <button
               onClick={handleExportSVG}
               className="tb-seg-btn"
-              title="Download Scalable Vector Graphics (SVG)"
+              title="Download A4 Landscape Vector SVG (297mm × 210mm)"
             >
               <span>SVG</span>
             </button>
@@ -246,7 +246,7 @@ export default function Toolbar({
           <button
             onClick={handlePrint}
             className="tb-print-btn"
-            title="Print or Save as PDF (A3 Landscape)"
+            title="Print or Save as PDF (A4 Landscape)"
           >
             <Printer className="w-3.5 h-3.5 shrink-0" />
             <span className="tb-print-label-full">Print / PDF</span>
@@ -262,7 +262,7 @@ export default function Toolbar({
           <button
             onClick={handleExportPNG}
             className="tb-seg-btn"
-            title="Download high-resolution A3 PNG"
+            title="Download A4 Landscape 300 DPI PNG (3508 × 2480)"
           >
             <Download className="w-3.5 h-3.5 shrink-0" />
             <span>PNG</span>
@@ -271,7 +271,7 @@ export default function Toolbar({
           <button
             onClick={handleExportSVG}
             className="tb-seg-btn"
-            title="Download Scalable Vector Graphics (SVG)"
+            title="Download A4 Landscape Vector SVG (297mm × 210mm)"
           >
             <span>SVG</span>
           </button>
