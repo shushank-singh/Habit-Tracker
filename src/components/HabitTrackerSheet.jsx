@@ -172,6 +172,7 @@ export default function HabitTrackerSheet({
   fontStyle = 'handwriting',
   soundEnabled = true,
   svgRef,
+  onCellHover,
 }) {
   const [activeEdit, setActiveEdit] = useState(null); // { kind, index }
   const inputRef = useRef(null);
@@ -699,13 +700,25 @@ export default function HabitTrackerSheet({
                   const pos = polarToCartesian(CX, CY, rMid, midAngle);
                   const pathD = describeSector(CX, CY, innerR, outerR, startAngle, endAngle);
                   const isChecked = Boolean(state.checks[`${hIdx}-${dayNum}`]);
+                  const habitTitle = state.dailyHabits[hIdx]?.name?.trim() || `Habit ${hIdx + 1}`;
 
                   return (
                     <g
                       key={`cell-${hIdx}-${dayNum}`}
                       className="cursor-pointer"
                       onClick={() => handleWheelCellClick(hIdx, dayNum)}
+                      onMouseEnter={() =>
+                        onCellHover?.({
+                          day: dayNum,
+                          habitNum: hIdx + 1,
+                          habitName: habitTitle,
+                          checked: isChecked,
+                          color: NUMBER_BOX_COLORS[hIdx],
+                        })
+                      }
+                      onMouseLeave={() => onCellHover?.(null)}
                     >
+                      <title>{`Day ${dayNum} · ${habitTitle}${isChecked ? ' ✓' : ''}`}</title>
                       <path
                         d={pathD}
                         fill={color}

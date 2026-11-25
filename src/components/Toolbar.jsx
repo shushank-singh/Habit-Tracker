@@ -6,7 +6,6 @@ import {
   VolumeX,
   Type,
   BarChart2,
-  Palette,
   Calendar,
   Sparkles,
   Eraser,
@@ -47,12 +46,28 @@ export default function Toolbar({
   soundEnabled,
   setSoundEnabled,
   onOpenStats,
+  onNotify,
   svgRef,
 }) {
   const matchedMonth = MONTHS.find(
     (m) => m.name.toLowerCase() === (state.month || '').trim().toLowerCase()
   );
   const isFebruary = matchedMonth?.name === 'February';
+
+  // Quick monthly completion badge
+  const totalDays = state.monthType || 31;
+  const activeHabits = (state.dailyHabits || []).filter((h) => h.name?.trim());
+  const totalPossible = activeHabits.length * totalDays;
+  let totalDone = 0;
+  if (totalPossible > 0) {
+    (state.dailyHabits || []).forEach((h, idx) => {
+      if (!h.name?.trim()) return;
+      for (let d = 1; d <= totalDays; d++) {
+        if (state.checks?.[`${idx}-${d}`]) totalDone++;
+      }
+    });
+  }
+  const completionPct = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
 
   const handleMonthChange = (e) => {
     const selected = MONTHS.find((m) => m.name === e.target.value);
@@ -82,24 +97,36 @@ export default function Toolbar({
   const handleExportPNG = () => {
     if (svgRef.current) {
       exportToPNG(svgRef.current, `${fileSlug}-a4-habit-tracker.png`);
+      onNotify?.({ text: 'Exported A4 PNG (3508 × 2480)' });
     }
   };
 
   const handleExportSVG = () => {
     if (svgRef.current) {
       exportToSVG(svgRef.current, `${fileSlug}-a4-habit-tracker.svg`);
+      onNotify?.({ text: 'Exported A4 Vector SVG (297 × 210 mm)' });
     }
   };
 
   const loadSample = () => {
+    const prevState = state;
     setState(SAMPLE_INITIAL_STATE);
+    onNotify?.({
+      text: 'Sample habits loaded',
+      undo: () => setState(prevState),
+    });
   };
 
   const clearSheet = () => {
+    const prevState = state;
     setState({
       ...BLANK_INITIAL_STATE,
       month: state.month,
       monthType: state.monthType,
+    });
+    onNotify?.({
+      text: 'Sheet cleared',
+      undo: () => setState(prevState),
     });
   };
 
@@ -112,7 +139,7 @@ export default function Toolbar({
           className="tb-seg-btn"
           title="Load sample habits and checkmarks"
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: '#b48a14' }} />
           <span>Sample</span>
         </button>
         <div className="tb-seg-divider" />
@@ -121,14 +148,14 @@ export default function Toolbar({
           className="tb-seg-btn"
           title="Clear all habits, checkmarks, and notes"
         >
-          <Eraser className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <Eraser className="w-3.5 h-3.5 text-stone-500 shrink-0" />
           <span>Clear</span>
         </button>
       </div>
 
       {/* Month & Leap Toggle */}
       <div className="tb-pill">
-        <Calendar className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+        <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: '#1D9589' }} />
         <select
           value={matchedMonth ? matchedMonth.name : ''}
           onChange={handleMonthChange}
@@ -136,12 +163,12 @@ export default function Toolbar({
           className="tb-select"
         >
           {!matchedMonth && (
-            <option value="" className="bg-stone-800 text-white">
+            <option value="">
               {state.month || 'Custom'} ({state.monthType}d)
             </option>
           )}
           {MONTHS.map((m) => (
-            <option key={m.name} value={m.name} className="bg-stone-800 text-white">
+            <option key={m.name} value={m.name}>
               {m.name} ({m.name === 'February' ? (state.monthType === 29 ? '29d' : '28d') : `${m.days}d`})
             </option>
           ))}
@@ -158,8 +185,7 @@ export default function Toolbar({
       </div>
 
       {/* Ink Color Picker */}
-      <div className="tb-pill tb-ink-group">
-        <Palette className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+      <div className="tb-pill tb-ink-group" title="Pen Ink Color">
         {INK_PALETTES.map((p) => (
           <button
             key={p.name}
@@ -178,21 +204,21 @@ export default function Toolbar({
         className="tb-btn"
         title="Toggle between handwritten ink and clean sans-serif typography"
       >
-        <Type className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+        <Type className="w-3.5 h-3.5 text-stone-500 shrink-0" />
         <span>{fontStyle === 'handwriting' ? 'Ink Font' : 'Sans Font'}</span>
       </button>
 
       {/* Sound Toggle */}
       <button
         onClick={() => setSoundEnabled(!soundEnabled)}
-        className="tb-icon-btn"
+        className={`tb-icon-btn ${soundEnabled ? 'is-sound-on' : ''}`}
         title={soundEnabled ? 'Mute Pen Tick Sound' : 'Enable Pen Tick Sound'}
         aria-label={soundEnabled ? 'Mute Pen Tick Sound' : 'Enable Pen Tick Sound'}
       >
         {soundEnabled ? (
-          <Volume2 className="w-3.5 h-3.5 text-teal-400" />
+          <Volume2 className="w-3.5 h-3.5" style={{ color: '#1D9589' }} />
         ) : (
-          <VolumeX className="w-3.5 h-3.5 text-stone-500" />
+          <VolumeX className="w-3.5 h-3.5 text-stone-400" />
         )}
       </button>
     </>
@@ -200,26 +226,33 @@ export default function Toolbar({
 
   return (
     <header className="no-print tb-header">
-      {/* Row 1: Always clean & uncrowded on both Mobile & Desktop */}
+      <div className="tb-accent-bar" />
       <div className="tb-main-row">
         {/* Brand */}
         <div className="tb-brand">
-          <span className="tb-brand-dot animate-pulse" />
+          <svg width="22" height="22" viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
+            <path d="M12 2 A10 10 0 1 1 2 12" fill="none" stroke="#1D9589" strokeWidth="3.2" strokeLinecap="round" />
+            <path d="M12 5.5 A6.5 6.5 0 1 1 5.5 12" fill="none" stroke="#D4C467" strokeWidth="3" strokeLinecap="round" />
+            <rect x="4" y="4" width="6" height="2.6" rx="1" fill="#E06B5E" />
+            <rect x="4" y="7.6" width="6" height="2.6" rx="1" fill="#64B76B" />
+          </svg>
           <span className="font-serif italic font-bold tb-brand-title">
             Habit Tracker
           </span>
-          <span className="tb-badge-a3">A4</span>
+          <span className="tb-badge-a4">
+            A4 · {completionPct}%
+          </span>
         </div>
 
-        {/* Desktop-only center controls (single-row layout >= 1024px) */}
+        {/* Desktop-only center controls */}
         <div className="tb-desktop-controls">
           {renderControlsCluster()}
         </div>
 
         {/* Right Actions */}
         <div className="tb-actions">
-          <button onClick={onOpenStats} className="tb-btn" title="View Stats & Streaks">
-            <BarChart2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+          <button onClick={onOpenStats} className="tb-btn tb-stats-btn" title="View Stats & Streaks">
+            <BarChart2 className="w-3.5 h-3.5 shrink-0" style={{ color: '#1D9589' }} />
             <span className="tb-stats-label-full">Stats & Streaks</span>
             <span className="tb-stats-label-short">Stats</span>
           </button>
@@ -230,7 +263,7 @@ export default function Toolbar({
               className="tb-seg-btn"
               title="Download A4 Landscape 300 DPI PNG (3508 × 2480)"
             >
-              <Download className="w-3.5 h-3.5 shrink-0" />
+              <Download className="w-3.5 h-3.5 text-stone-500 shrink-0" />
               <span>PNG</span>
             </button>
             <div className="tb-seg-divider" />
@@ -264,7 +297,7 @@ export default function Toolbar({
             className="tb-seg-btn"
             title="Download A4 Landscape 300 DPI PNG (3508 × 2480)"
           >
-            <Download className="w-3.5 h-3.5 shrink-0" />
+            <Download className="w-3.5 h-3.5 text-stone-500 shrink-0" />
             <span>PNG</span>
           </button>
           <div className="tb-seg-divider" />

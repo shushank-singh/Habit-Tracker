@@ -4,7 +4,7 @@ import HabitTrackerSheet, {
 } from './components/HabitTrackerSheet';
 import Toolbar from './components/Toolbar';
 import StatsDrawer from './components/StatsDrawer';
-import { ZoomIn, ZoomOut, Maximize2, Sparkles } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, CheckCircle2, RotateCcw } from 'lucide-react';
 
 const STORAGE_KEY = 'habit_tracker_a3_state_v1';
 const PREFS_KEY = 'habit_tracker_a3_prefs_v1';
@@ -37,9 +37,11 @@ export default function App() {
 
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [showTip, setShowTip] = useState(true);
+  const [hoveredCell, setHoveredCell] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const svgRef = useRef(null);
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     try {
@@ -57,6 +59,14 @@ export default function App() {
     }
   }, [prefs]);
 
+  const showToast = (payload) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(payload);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+
   const setInkColor = (inkColor) => setPrefs((p) => ({ ...p, inkColor }));
   const setFontStyle = (fontStyle) => setPrefs((p) => ({ ...p, fontStyle }));
   const setSoundEnabled = (soundEnabled) => setPrefs((p) => ({ ...p, soundEnabled }));
@@ -70,8 +80,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-200/80 flex flex-col font-clean">
-      {/* Top Navigation & Controls */}
+    <div className="app-shell">
+      {/* Top Studio Navigation & Controls */}
       <Toolbar
         state={state}
         setState={setState}
@@ -82,33 +92,16 @@ export default function App() {
         soundEnabled={prefs.soundEnabled}
         setSoundEnabled={setSoundEnabled}
         onOpenStats={() => setIsStatsOpen(true)}
+        onNotify={showToast}
         svgRef={svgRef}
       />
 
-      {/* Main Workspace Area */}
-      <main className="app-main flex-1 flex flex-col items-center justify-start overflow-auto">
-        {showTip && (
-          <div className="no-print tip-banner bg-white/90 backdrop-blur border border-stone-300 rounded-xl shadow-xs flex items-center justify-between text-xs text-stone-700">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
-              <span>
-                <strong>Interactive A4 Sheet:</strong> Click any wheel cell or Weekly/Monthly box to toggle checkmarks. Click any colored bar, Month line, Weekly/Monthly line, or Notes line to type directly.
-              </span>
-            </div>
-            <button
-              onClick={() => setShowTip(false)}
-              className="text-stone-400 hover:text-stone-700 ml-2 font-bold cursor-pointer"
-              aria-label="Dismiss tip"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {/* A3 Landscape Paper Sheet Wrapper (scales cleanly with zero edge clipping) */}
-        <div className="sheet-viewport-wrapper flex justify-center w-full">
+      {/* Main Desk Workspace */}
+      <main className="app-main">
+        {/* Paper Sheet Wrapper */}
+        <div className="sheet-viewport-wrapper">
           <div
-            className="paper-page bg-white text-stone-900 rounded-sm shadow-xl border border-stone-300/80 overflow-hidden relative shrink-0"
+            className="paper-page"
             style={{
               width: `calc(min(1160px, 95vw) * ${zoomLevel})`,
             }}
@@ -120,39 +113,60 @@ export default function App() {
               fontStyle={prefs.fontStyle}
               soundEnabled={prefs.soundEnabled}
               svgRef={svgRef}
+              onCellHover={setHoveredCell}
             />
           </div>
         </div>
 
-        {/* Floating Zoom Controls (bottom right) */}
-        <div className="no-print fixed bottom-5 right-5 flex items-center gap-1.5 bg-stone-900/90 text-stone-100 backdrop-blur px-3 py-1.5 rounded-full shadow-lg border border-stone-700 text-xs z-30">
+        {/* Bottom-Left Live Cell Readout / Subtle Hint (Desktop) */}
+        <div className="no-print floating-status-pill">
+          {hoveredCell ? (
+            <>
+              <span
+                className="status-dot"
+                style={{ backgroundColor: hoveredCell.color }}
+              />
+              <span className="status-text">
+                <strong>Day {hoveredCell.day}</strong> · {hoveredCell.habitName}
+                {hoveredCell.checked ? ' ✓' : ''}
+              </span>
+            </>
+          ) : (
+            <span className="status-text-muted">
+              Click any wheel cell or line to edit · Auto-saved locally
+            </span>
+          )}
+        </div>
+
+        {/* Bottom-Right Frosted Zoom Dock */}
+        <div className="no-print floating-zoom-dock">
           <button
             onClick={() => handleZoom(-0.2)}
-            className="p-1 hover:text-teal-300 transition-colors cursor-pointer"
+            className="zoom-btn"
             title="Zoom Out"
             aria-label="Zoom Out"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleResetZoom}
-            className="px-2 py-0.5 hover:text-teal-300 font-mono text-[11px] transition-colors cursor-pointer"
+            className="zoom-readout"
             title="Reset Zoom to 100%"
           >
             {Math.round(zoomLevel * 100)}%
           </button>
           <button
             onClick={() => handleZoom(0.2)}
-            className="p-1 hover:text-teal-300 transition-colors cursor-pointer"
+            className="zoom-btn"
             title="Zoom In"
             aria-label="Zoom In"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-3.5 h-3.5" />
           </button>
-          <div className="w-px h-3.5 bg-stone-700 mx-0.5" />
+          <div className="zoom-divider" />
           <button
             onClick={handleResetZoom}
-            className="p-1 hover:text-teal-300 transition-colors cursor-pointer"
+            className="zoom-btn"
             title="Fit Page"
             aria-label="Fit Page"
           >
@@ -160,6 +174,26 @@ export default function App() {
           </button>
         </div>
       </main>
+
+      {/* Subtle Toast Feedback (with Undo) */}
+      {toast && (
+        <div className="no-print toast-pill" role="status">
+          <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#1D9589' }} />
+          <span>{toast.text}</span>
+          {toast.undo && (
+            <button
+              onClick={() => {
+                toast.undo();
+                setToast(null);
+              }}
+              className="toast-undo-btn"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Undo</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Side Stats Drawer */}
       <StatsDrawer
