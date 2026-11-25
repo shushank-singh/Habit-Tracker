@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import HabitTrackerSheet, {
   SAMPLE_INITIAL_STATE,
 } from './components/HabitTrackerSheet';
+import MobileTrackerView from './components/MobileTrackerView';
 import Toolbar from './components/Toolbar';
 import StatsDrawer from './components/StatsDrawer';
 import { ZoomIn, ZoomOut, Maximize2, CheckCircle2, RotateCcw } from 'lucide-react';
@@ -36,6 +37,8 @@ export default function App() {
   });
 
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [mobileView, setMobileView] = useState('checkin'); // 'checkin' | 'sheet'
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredCell, setHoveredCell] = useState(null);
   const [toast, setToast] = useState(null);
@@ -72,7 +75,7 @@ export default function App() {
   const setSoundEnabled = (soundEnabled) => setPrefs((p) => ({ ...p, soundEnabled }));
 
   const handleZoom = (delta) => {
-    setZoomLevel((prev) => Math.min(Math.max(Number((prev + delta).toFixed(2)), 0.6), 2.2));
+    setZoomLevel((prev) => Math.min(Math.max(Number((prev + delta).toFixed(2)), 0.6), 2.4));
   };
 
   const handleResetZoom = () => {
@@ -94,12 +97,34 @@ export default function App() {
         onOpenStats={() => setIsStatsOpen(true)}
         onNotify={showToast}
         svgRef={svgRef}
+        mobileView={mobileView}
+        setMobileView={setMobileView}
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
 
       {/* Main Desk Workspace */}
       <main className="app-main">
-        {/* Paper Sheet Wrapper */}
-        <div className="sheet-viewport-wrapper">
+        {/* Mobile-First Daily Check-In View (< 768px when mobileView === 'checkin') */}
+        {mobileView === 'checkin' && (
+          <div className="no-print mob-only-view">
+            <MobileTrackerView
+              state={state}
+              setState={setState}
+              inkColor={prefs.inkColor}
+              fontStyle={prefs.fontStyle}
+              soundEnabled={prefs.soundEnabled}
+              onOpenControls={() => setIsMobileMenuOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* Full A4 Landscape Sheet (Always visible on >= 768px & Print; toggled on < 768px) */}
+        <div
+          className={`sheet-viewport-wrapper ${
+            mobileView === 'checkin' ? 'is-mobile-hidden' : ''
+          }`}
+        >
           <div
             className="paper-page"
             style={{
@@ -118,7 +143,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom-Left Live Cell Readout / Subtle Hint (Desktop) */}
+        {/* Bottom-Left Live Cell Readout / Subtle Hint (Desktop >= 768px) */}
         <div className="no-print floating-status-pill">
           {hoveredCell ? (
             <>
@@ -138,8 +163,12 @@ export default function App() {
           )}
         </div>
 
-        {/* Bottom-Right Frosted Zoom Dock */}
-        <div className="no-print floating-zoom-dock">
+        {/* Bottom-Right Frosted Zoom Dock (Hidden on Mobile Check-In tab) */}
+        <div
+          className={`no-print floating-zoom-dock ${
+            mobileView === 'checkin' ? 'is-mobile-hidden-dock' : ''
+          }`}
+        >
           <button
             onClick={() => handleZoom(-0.2)}
             className="zoom-btn"
