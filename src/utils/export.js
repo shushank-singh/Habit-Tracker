@@ -1,11 +1,10 @@
-// Export SVG and PNG utilities
+// Export SVG and PNG utilities for A3 Landscape Habit Tracker (1260 x 891)
 
-export function exportToSVG(svgElement, filename = 'habit-tracker.svg') {
+export function exportToSVG(svgElement, filename = 'habit-tracker-a3.svg') {
   if (!svgElement) return;
   const serializer = new XMLSerializer();
   let source = serializer.serializeToString(svgElement);
 
-  // Add namespaces if not present
   if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
     source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
   }
@@ -13,7 +12,6 @@ export function exportToSVG(svgElement, filename = 'habit-tracker.svg') {
     source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
   }
 
-  // Prepend XML declaration
   source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
 
   const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
@@ -25,10 +23,22 @@ export function exportToSVG(svgElement, filename = 'habit-tracker.svg') {
   document.body.removeChild(downloadLink);
 }
 
-export function exportToPNG(svgElement, filename = 'habit-tracker.png', scale = 2.5) {
+export function exportToPNG(svgElement, filename = 'habit-tracker-a3.png', scale = 3) {
   if (!svgElement) return;
   const serializer = new XMLSerializer();
-  const source = serializer.serializeToString(svgElement);
+  let source = serializer.serializeToString(svgElement);
+
+  if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+    source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+
+  const width = svgElement.viewBox.baseVal.width || 1260;
+  const height = svgElement.viewBox.baseVal.height || 891;
+
+  // Ensure explicit width/height attributes for consistent canvas rasterization
+  if (!source.match(/^<svg[^>]+width=/)) {
+    source = source.replace(/^<svg/, `<svg width="${width}" height="${height}"`);
+  }
 
   const img = new Image();
   const svgBlob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
@@ -36,9 +46,6 @@ export function exportToPNG(svgElement, filename = 'habit-tracker.png', scale = 
 
   img.onload = () => {
     const canvas = document.createElement('canvas');
-    const width = svgElement.viewBox.baseVal.width || 743;
-    const height = svgElement.viewBox.baseVal.height || 1024;
-
     canvas.width = width * scale;
     canvas.height = height * scale;
 
@@ -47,7 +54,7 @@ export function exportToPNG(svgElement, filename = 'habit-tracker.png', scale = 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.scale(scale, scale);
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, width, height);
 
     URL.revokeObjectURL(url);
 
@@ -62,6 +69,10 @@ export function exportToPNG(svgElement, filename = 'habit-tracker.png', scale = 
       document.body.removeChild(downloadLink);
       URL.revokeObjectURL(pngUrl);
     }, 'image/png');
+  };
+
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
   };
 
   img.src = url;

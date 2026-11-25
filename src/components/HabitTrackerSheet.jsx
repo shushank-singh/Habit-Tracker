@@ -1,144 +1,191 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { playPenTickSound, playCelebrationSound } from '../utils/audio';
 import confetti from 'canvas-confetti';
 
-// Track colors matching the pastel rainbow of the photo
+// Saturated number square colors (1–10) matching Habit_Tracker_A3.pdf
+export const NUMBER_BOX_COLORS = [
+  '#E06B5E', // 1: Coral Red
+  '#EA963E', // 2: Orange
+  '#F0C944', // 3: Yellow
+  '#97C248', // 4: Lime Green
+  '#64B76B', // 5: Emerald / Mint Green
+  '#44B1A7', // 6: Teal / Cyan
+  '#55A2D7', // 7: Sky Blue
+  '#6F86D2', // 8: Periwinkle / Blue
+  '#9B76C7', // 9: Lavender / Purple
+  '#D472A8', // 10: Pink / Magenta
+];
+
+// Pastel bar & wheel track colors (1–10) matching Habit_Tracker_A3.pdf
 export const TRACK_COLORS = [
-  '#e2bec1', // Row 1: soft rose / blush
-  '#dfc7b8', // Row 2: soft warm peach
-  '#ebdec4', // Row 3: soft light apricot / warm yellow
-  '#e6e1ce', // Row 4: soft butter yellow
-  '#f1f3dd', // Row 5: soft pale mint / lime
-  '#daede3', // Row 6: soft seafoam / sage
-  '#ccf1f6', // Row 7: soft sky blue
-  '#d6e4f5', // Row 8: soft periwinkle
-  '#ead3ef', // Row 9: soft lilac
-  '#f5cbdb', // Row 10: soft mauve pink
+  '#F3B6B0', // 1: Soft Coral / Salmon
+  '#F9D1A4', // 2: Soft Apricot / Peach
+  '#FCE9A7', // 3: Soft Butter Yellow
+  '#D4E8AC', // 4: Soft Lime Pistachio
+  '#BCE3BE', // 5: Soft Mint Green
+  '#B0E0DA', // 6: Soft Aqua Teal
+  '#B6DAF1', // 7: Soft Sky Blue
+  '#C2CDF0', // 8: Soft Periwinkle
+  '#D8C5ED', // 9: Soft Lavender
+  '#F0C1DC', // 10: Soft Rose Pink
 ];
 
-// Top tables gradient row colors
-export const TOP_ROW_COLORS = [
-  '#f0cecc', // Row 1: rose
-  '#f6dec7', // Row 2: peach
-  '#f8ebcd', // Row 3: apricot
-  '#fcf8df', // Row 4: pale yellow
-  '#f4f3dc', // Row 5: cream/pale green
-];
+// Theme banner & outer wheel colors from Habit_Tracker_A3.pdf
+export const THEME_COLORS = {
+  goldBanner: '#D4C467',
+  tealBanner: '#1D9589',
+  wheelRing: '#C6C461',
+  inkDefault: '#242424',
+  gridStroke: '#222222',
+};
 
-// Photo default initial data
-export const PHOTO_INITIAL_STATE = {
-  month: 'February',
-  monthType: 29, // 29 days
-  monthlyHabits: [
-    { id: 1, name: 'Cinema', status: 'Yes' },
-    { id: 2, name: '', status: '' },
-    { id: 3, name: '', status: '' },
-    { id: 4, name: '', status: '' },
-    { id: 5, name: '', status: '' },
+// Sample initial data (31-day month so the default wheel shows 1..31 like Habit_Tracker_A3.pdf)
+export const SAMPLE_INITIAL_STATE = {
+  month: 'March',
+  monthType: 31,
+  dailyHabits: [
+    { id: 1, num: '1', name: 'Morning Stretch / Pilates' },
+    { id: 2, num: '2', name: 'Drink 2L Water' },
+    { id: 3, num: '3', name: 'Take Vitamins & Probiotics' },
+    { id: 4, num: '4', name: 'Read 20 Pages' },
+    { id: 5, num: '5', name: '10,000 Steps Walk' },
+    { id: 6, num: '6', name: 'Mindful Journaling' },
+    { id: 7, num: '7', name: 'No Sugar After Dinner' },
+    { id: 8, num: '8', name: 'Deep Focus Session (90m)' },
+    { id: 9, num: '9', name: 'Skincare Routine' },
+    { id: 10, num: '10', name: 'Sleep Before 11 PM' },
   ],
   weeklyHabits: [
-    { id: 1, name: 'Meet my mom', weeks: [true, false, false, false, false] },
-    { id: 2, name: '', weeks: [false, false, false, false, false] },
-    { id: 3, name: '', weeks: [false, false, false, false, false] },
-    { id: 4, name: '', weeks: [false, false, false, false, false] },
-    { id: 5, name: '', weeks: [false, false, false, false, false] },
+    { id: 1, name: 'Meal prep for the week', weeks: [true, true, false, false, false] },
+    { id: 2, name: 'Call family & catch up', weeks: [true, false, false, false, false] },
+    { id: 3, name: 'Clean & reset workspace', weeks: [true, true, false, false, false] },
+    { id: 4, name: 'Long outdoor run / hike', weeks: [true, false, false, false, false] },
+    { id: 5, name: 'Review weekly budget', weeks: [false, true, false, false, false] },
+    { id: 6, name: '', weeks: [false, false, false, false, false] },
+    { id: 7, name: '', weeks: [false, false, false, false, false] },
+    { id: 8, name: '', weeks: [false, false, false, false, false] },
+    { id: 9, name: '', weeks: [false, false, false, false, false] },
+    { id: 10, name: '', weeks: [false, false, false, false, false] },
   ],
-  dailyHabits: [
-    { id: 1, num: '1', name: 'Pilates' },
-    { id: 2, num: '2', name: 'Eat probiotics!' },
-    { id: 3, num: '3', name: 'Drink your vitamins!' },
-    { id: 4, num: '4', name: 'Take your medicine!' },
-    { id: 5, num: '5', name: '' },
-    { id: 6, num: '6', name: '' },
-    { id: 7, num: '7', name: '' },
-    { id: 8, num: '8', name: '' },
-    { id: 9, num: '9', name: '' },
-    { id: 10, num: '10', name: '' },
+  monthlyHabits: [
+    { id: 1, name: 'Finish 2 books this month', status: '✓' },
+    { id: 2, name: 'Full digital declutter day', status: '' },
+    { id: 3, name: 'Plan next month goals', status: '' },
+    { id: 4, name: '', status: '' },
   ],
-  // Grid checks: { 'habitIndex-day': boolean }
-  // Habit indices: 0..9 (Row 1..10)
-  // Day indices: 1..29
   checks: {
-    // Days 1-7: Habits 1-4
-    '0-1': true, '1-1': true, '2-1': true, '3-1': true,
-    '0-2': true, '1-2': true, '2-2': true, '3-2': true,
-    '0-3': true, '1-3': true, '2-3': true, '3-3': true,
-    '0-4': true, '1-4': true, '2-4': true, '3-4': true,
-    '0-5': true, '1-5': true, '2-5': true, '3-5': true,
-    '0-6': true, '1-6': true, '2-6': true, '3-6': true,
-    '0-7': true, '1-7': true, '2-7': true, '3-7': true,
-    // Day 8: Habits 1-2
-    '0-8': true, '1-8': true,
+    '0-1': true, '1-1': true, '2-1': true, '3-1': true, '4-1': true, '5-1': true, '7-1': true, '8-1': true, '9-1': true,
+    '0-2': true, '1-2': true, '2-2': true, '3-2': true, '5-2': true, '6-2': true, '7-2': true, '8-2': true,
+    '0-3': true, '1-3': true, '2-3': true, '4-3': true, '5-3': true, '6-3': true, '8-3': true, '9-3': true,
+    '0-4': true, '1-4': true, '2-4': true, '3-4': true, '4-4': true, '6-4': true, '7-4': true, '8-4': true, '9-4': true,
+    '0-5': true, '1-5': true, '2-5': true, '3-5': true, '4-5': true, '5-5': true, '7-5': true, '8-5': true,
+    '0-6': true, '1-6': true, '2-6': true, '4-6': true, '5-6': true, '6-6': true, '8-6': true, '9-6': true,
+    '0-7': true, '1-7': true, '2-7': true, '3-7': true, '5-7': true, '7-7': true, '8-7': true,
+    '0-8': true, '1-8': true, '2-8': true, '3-8': true, '4-8': true,
   },
-  notes: {
-    topRight: ['', '', '', '', '', ''],
-    myNotes: '',
-    bottomLeft: ['', '', '', '', ''],
-    bottomRight: ['', '', '', '', ''],
-  }
+  notes: [
+    '',
+    'Focus on consistency over perfection.',
+    'Keep water bottle on desk all morning.',
+    'Sunday evening reset makes Monday effortless.',
+    '',
+    '',
+  ],
 };
 
 export const BLANK_INITIAL_STATE = {
-  month: 'March',
+  month: '',
   monthType: 31,
-  monthlyHabits: [
-    { id: 1, name: '', status: '' },
-    { id: 2, name: '', status: '' },
-    { id: 3, name: '', status: '' },
-    { id: 4, name: '', status: '' },
-    { id: 5, name: '', status: '' },
-  ],
-  weeklyHabits: [
-    { id: 1, name: '', weeks: [false, false, false, false, false] },
-    { id: 2, name: '', weeks: [false, false, false, false, false] },
-    { id: 3, name: '', weeks: [false, false, false, false, false] },
-    { id: 4, name: '', weeks: [false, false, false, false, false] },
-    { id: 5, name: '', weeks: [false, false, false, false, false] },
-  ],
-  dailyHabits: [
-    { id: 1, num: '1', name: '' },
-    { id: 2, num: '2', name: '' },
-    { id: 3, num: '3', name: '' },
-    { id: 4, num: '4', name: '' },
-    { id: 5, num: '5', name: '' },
-    { id: 6, num: '6', name: '' },
-    { id: 7, num: '7', name: '' },
-    { id: 8, num: '8', name: '' },
-    { id: 9, num: '9', name: '' },
-    { id: 10, num: '10', name: '' },
-  ],
+  dailyHabits: Array.from({ length: 10 }, (_, idx) => ({
+    id: idx + 1,
+    num: `${idx + 1}`,
+    name: '',
+  })),
+  weeklyHabits: Array.from({ length: 10 }, (_, idx) => ({
+    id: idx + 1,
+    name: '',
+    weeks: [false, false, false, false, false],
+  })),
+  monthlyHabits: Array.from({ length: 4 }, (_, idx) => ({
+    id: idx + 1,
+    name: '',
+    status: '',
+  })),
   checks: {},
-  notes: {
-    topRight: ['', '', '', '', '', ''],
-    myNotes: '',
-    bottomLeft: ['', '', '', '', ''],
-    bottomRight: ['', '', '', '', ''],
-  }
+  notes: ['', '', '', '', '', ''],
 };
+
+// A3 Landscape SVG coordinate space (420mm x 297mm @ 3px/mm = 1260 x 891)
+const SHEET_W = 1260;
+const SHEET_H = 891;
+
+// Wheel geometry
+const CX = 388;
+const CY = 487;
+const R_IN = 104;
+const TRACK_H = 22;
+const NUM_TRACKS = 10;
+const R_OUT = R_IN + NUM_TRACKS * TRACK_H; // 324
+const RING_H = 22;
+const R_HEADER = R_OUT + RING_H; // 346
+
+// Left daily bars geometry
+const BAR_X = 39;
+const NUM_BOX_W = 25;
+const BAR_TEXT_X = BAR_X + NUM_BOX_W; // 64
+const BAR_TEXT_W = CX - BAR_TEXT_X; // 324
+
+// Right side geometry
+const RIGHT_EDGE = 1214;
+const BASE_LEFT_X = 820;
+const COL_W = 39.6;
+const WEEKLY_GRID_X = RIGHT_EDGE - 5 * COL_W; // 1016
+const WEEKLY_TOP_Y = 204.2;
+const ROW_H = 24.2;
+const WEEKLY_LINE_STARTS = [
+  640, // Line 0 (under "Weekly" heading / header bottom)
+  680, // Line 1
+  716, // Line 2
+  748, // Line 3
+  776, // Line 4
+  820, // Line 5
+  820, // Line 6
+  820, // Line 7
+  820, // Line 8
+  820, // Line 9
+  820, // Line 10
+];
+
+const MONTHLY_TOP_Y = 515;
+const MONTHLY_COL_X = RIGHT_EDGE - COL_W; // 1174.4
+
+const NOTES_TOP_Y = 685;
+const NOTES_LINE_STARTS = [820, 792, 762, 728, 686, 636];
+
+const DISPLAY_SERIF_FONT =
+  "'Lucida Calligraphy', 'Apple Chancery', 'Cormorant Garamond', 'Playfair Display', Georgia, serif";
 
 export default function HabitTrackerSheet({
   state,
   setState,
-  inkColor = '#1d3557', // Classic pen ink
-  fontStyle = 'handwriting', // 'handwriting' or 'clean'
+  inkColor = '#1d3557',
+  fontStyle = 'handwriting',
   soundEnabled = true,
   svgRef,
 }) {
-  const [editingCell, setEditingCell] = useState(null); // { type, id, field }
-  const [hoveredCell, setHoveredCell] = useState(null);
+  const [activeEdit, setActiveEdit] = useState(null); // { kind, index }
+  const inputRef = useRef(null);
 
-  // Geometric Constants matching our measured coordinates
-  const CX = 390.0;
-  const CY = 667.0;
-  const R_IN = 72.0;
-  const TRACK_H = 23.8;
-  const NUM_TRACKS = 10;
-  const R_OUT = R_IN + NUM_TRACKS * TRACK_H; // 310.0
-  const R_HEADER = R_OUT + TRACK_H;          // 333.8
-  const TOTAL_DAYS = state.monthType || 29;
-  const DEG_PER_DAY = 7.5; // Exactly 48-division standard polar grid
+  const TOTAL_DAYS = state.monthType || 31;
+  const DEG_PER_DAY = 270 / TOTAL_DAYS;
 
-  // Polar coordinate helper (degrees: -90 is top, clockwise)
+  useEffect(() => {
+    if (activeEdit && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [activeEdit]);
+
   function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
     const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
     return {
@@ -147,7 +194,6 @@ export default function HabitTrackerSheet({
     };
   }
 
-  // Create an annular sector SVG path
   function describeSector(x, y, innerR, outerR, startAngle, endAngle) {
     const startOuter = polarToCartesian(x, y, outerR, startAngle);
     const endOuter = polarToCartesian(x, y, outerR, endAngle);
@@ -165,14 +211,12 @@ export default function HabitTrackerSheet({
     ].join(' ');
   }
 
-  // Toggle checkmark on the wheel
   const handleWheelCellClick = (habitIdx, day) => {
     const key = `${habitIdx}-${day}`;
     const nextChecks = { ...state.checks, [key]: !state.checks[key] };
     setState({ ...state, checks: nextChecks });
     playPenTickSound(soundEnabled);
 
-    // Check if user completed all active habits for that day!
     const activeHabitIndices = state.dailyHabits
       .map((h, i) => (h.name.trim() ? i : null))
       .filter((i) => i !== null);
@@ -187,45 +231,167 @@ export default function HabitTrackerSheet({
           particleCount: 45,
           spread: 60,
           origin: { y: 0.6 },
-          colors: ['#f8b4bc', '#fce2a6', '#c5ece5', '#cbd6f8', '#f1bee8'],
+          colors: ['#E06B5E', '#F0C944', '#64B76B', '#55A2D7', '#D472A8'],
         });
       }
     }
   };
 
-  // Toggle weekly habit checkbox
   const handleWeeklyCheckToggle = (habitIdx, weekIdx) => {
     const updated = [...state.weeklyHabits];
-    const weeks = [...updated[habitIdx].weeks];
+    const current = updated[habitIdx] || { id: habitIdx + 1, name: '', weeks: [false, false, false, false, false] };
+    const weeks = [...(current.weeks || [false, false, false, false, false])];
     weeks[weekIdx] = !weeks[weekIdx];
-    updated[habitIdx] = { ...updated[habitIdx], weeks };
+    updated[habitIdx] = { ...current, weeks };
     setState({ ...state, weeklyHabits: updated });
     playPenTickSound(soundEnabled);
   };
 
-  // Toggle monthly habit status
   const handleMonthlyStatusToggle = (habitIdx) => {
     const updated = [...state.monthlyHabits];
-    const curr = updated[habitIdx].status;
-    let next = 'Yes';
-    if (curr === 'Yes') next = '✓';
-    else if (curr === '✓') next = '';
-    else next = 'Yes';
-    updated[habitIdx] = { ...updated[habitIdx], status: next };
+    const current = updated[habitIdx] || { id: habitIdx + 1, name: '', status: '' };
+    const nextStatus = current.status ? '' : '✓';
+    updated[habitIdx] = { ...current, status: nextStatus };
     setState({ ...state, monthlyHabits: updated });
     playPenTickSound(soundEnabled);
   };
 
-  // Handwriting vs clean font class
-  const penFont = fontStyle === 'handwriting' ? 'font-handwriting' : 'font-clean';
-  const headerFont = 'font-serif';
+  // Helper for computing active overlay input geometry & value
+  const getActiveInputSpec = () => {
+    if (!activeEdit) return null;
+    const { kind, index } = activeEdit;
+    const isHand = fontStyle === 'handwriting';
+
+    if (kind === 'month') {
+      return {
+        x: 1005,
+        y: 52,
+        w: 240,
+        h: 38,
+        value: state.month || '',
+        fontSizePx: isHand ? 32 : 22,
+        fontWeight: isHand ? 700 : 600,
+        placeholder: 'Month name...',
+        onChange: (val) => setState({ ...state, month: val }),
+        onNext: () => setActiveEdit({ kind: 'daily', index: 0 }),
+      };
+    }
+
+    if (kind === 'daily') {
+      const yStart = CY - R_OUT + index * TRACK_H;
+      return {
+        x: BAR_TEXT_X + 6,
+        y: yStart + 1,
+        w: BAR_TEXT_W - 12,
+        h: TRACK_H - 2,
+        value: state.dailyHabits[index]?.name || '',
+        fontSizePx: isHand ? 20 : 13,
+        fontWeight: isHand ? 600 : 500,
+        placeholder: `Habit ${index + 1}...`,
+        onChange: (val) => {
+          const updated = [...state.dailyHabits];
+          updated[index] = { ...updated[index], name: val };
+          setState({ ...state, dailyHabits: updated });
+        },
+        onNext: () =>
+          index < 9
+            ? setActiveEdit({ kind: 'daily', index: index + 1 })
+            : setActiveEdit({ kind: 'weekly', index: 0 }),
+      };
+    }
+
+    if (kind === 'weekly') {
+      const yBottom = WEEKLY_TOP_Y + (index + 1) * ROW_H;
+      const lineX = WEEKLY_LINE_STARTS[index + 1];
+      return {
+        x: lineX + 4,
+        y: yBottom - ROW_H + 2,
+        w: WEEKLY_GRID_X - lineX - 10,
+        h: ROW_H - 3,
+        value: state.weeklyHabits[index]?.name || '',
+        fontSizePx: isHand ? 20 : 13,
+        fontWeight: isHand ? 600 : 500,
+        placeholder: `Weekly goal ${index + 1}...`,
+        onChange: (val) => {
+          const updated = [...state.weeklyHabits];
+          updated[index] = { ...updated[index], name: val };
+          setState({ ...state, weeklyHabits: updated });
+        },
+        onNext: () =>
+          index < 9
+            ? setActiveEdit({ kind: 'weekly', index: index + 1 })
+            : setActiveEdit({ kind: 'monthly', index: 0 }),
+      };
+    }
+
+    if (kind === 'monthly') {
+      const yTop = MONTHLY_TOP_Y + index * ROW_H;
+      return {
+        x: BASE_LEFT_X + 4,
+        y: yTop + 2,
+        w: MONTHLY_COL_X - BASE_LEFT_X - 10,
+        h: ROW_H - 3,
+        value: state.monthlyHabits[index]?.name || '',
+        fontSizePx: isHand ? 20 : 13,
+        fontWeight: isHand ? 600 : 500,
+        placeholder: `Monthly goal ${index + 1}...`,
+        onChange: (val) => {
+          const updated = [...state.monthlyHabits];
+          updated[index] = { ...updated[index], name: val };
+          setState({ ...state, monthlyHabits: updated });
+        },
+        onNext: () =>
+          index < 3
+            ? setActiveEdit({ kind: 'monthly', index: index + 1 })
+            : setActiveEdit({ kind: 'note', index: 1 }),
+      };
+    }
+
+    if (kind === 'note') {
+      const lineY = NOTES_TOP_Y + index * ROW_H;
+      const startX = index === 0 ? 975 : NOTES_LINE_STARTS[index];
+      return {
+        x: startX + 4,
+        y: lineY - ROW_H + 2,
+        w: RIGHT_EDGE - startX - 8,
+        h: ROW_H - 3,
+        value: state.notes?.[index] || '',
+        fontSizePx: isHand ? 20 : 13,
+        fontWeight: isHand ? 600 : 500,
+        placeholder: 'Write note...',
+        onChange: (val) => {
+          const notes = [...(state.notes || ['', '', '', '', '', ''])];
+          notes[index] = val;
+          setState({ ...state, notes });
+        },
+        onNext: () =>
+          index < 5
+            ? setActiveEdit({ kind: 'note', index: index + 1 })
+            : setActiveEdit(null),
+      };
+    }
+
+    return null;
+  };
+
+  const activeInput = getActiveInputSpec();
+  const penFontFamily =
+    fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif";
+
+  // 9 o'clock end point of inner circle
+  const endAngleWheel = -90 + TOTAL_DAYS * DEG_PER_DAY;
+  const innerEndPt = polarToCartesian(CX, CY, R_IN, endAngleWheel);
+  const outerEndPt = polarToCartesian(CX, CY, R_HEADER, endAngleWheel);
 
   return (
-    <div className="sheet-container relative select-none">
+    <div
+      className="sheet-container relative select-none w-full h-full"
+      style={{ containerType: 'inline-size' }}
+    >
       <svg
         ref={svgRef}
-        viewBox="0 0 743 1024"
-        className="w-full h-auto habit-sheet-svg"
+        viewBox={`0 0 ${SHEET_W} ${SHEET_H}`}
+        className="w-full h-full habit-sheet-svg"
         xmlns="http://www.w3.org/2000/svg"
         style={{
           fontFamily: "'Inter', sans-serif",
@@ -234,320 +400,508 @@ export default function HabitTrackerSheet({
         }}
       >
         <defs>
-          {/* Subtle paper grain filter */}
-          <filter id="paper-texture" x="0%" y="0%" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" result="noise" />
-            <feColorMatrix
-              type="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.02 0"
-              in="noise"
-              result="coloredNoise"
-            />
-            <feComposite operator="in" in2="SourceGraphic" />
-          </filter>
-
-          {/* Ink drop shadow filter */}
-          <filter id="ink-bleed" x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="0.25" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
+          {/* Clip paths for clean text bounds inside bars/rows (for SVG/PNG export) */}
+          <clipPath id="clip-month-line">
+            <rect x="1002" y="40" width="248" height="52" />
+          </clipPath>
+          {Array.from({ length: 10 }, (_, i) => {
+            const yStart = CY - R_OUT + i * TRACK_H;
+            return (
+              <clipPath key={`clip-daily-${i}`} id={`clip-daily-${i}`}>
+                <rect x={BAR_TEXT_X + 4} y={yStart} width={BAR_TEXT_W - 10} height={TRACK_H} />
+              </clipPath>
+            );
+          })}
+          {Array.from({ length: 10 }, (_, i) => {
+            const yTop = WEEKLY_TOP_Y + i * ROW_H;
+            const lineX = WEEKLY_LINE_STARTS[i + 1];
+            return (
+              <clipPath key={`clip-weekly-${i}`} id={`clip-weekly-${i}`}>
+                <rect x={lineX + 2} y={yTop} width={WEEKLY_GRID_X - lineX - 6} height={ROW_H} />
+              </clipPath>
+            );
+          })}
+          {Array.from({ length: 4 }, (_, i) => {
+            const yTop = MONTHLY_TOP_Y + i * ROW_H;
+            return (
+              <clipPath key={`clip-monthly-${i}`} id={`clip-monthly-${i}`}>
+                <rect x={BASE_LEFT_X + 2} y={yTop} width={MONTHLY_COL_X - BASE_LEFT_X - 6} height={ROW_H} />
+              </clipPath>
+            );
+          })}
+          {Array.from({ length: 6 }, (_, i) => {
+            const lineY = NOTES_TOP_Y + i * ROW_H;
+            const startX = i === 0 ? 975 : NOTES_LINE_STARTS[i];
+            return (
+              <clipPath key={`clip-note-${i}`} id={`clip-note-${i}`}>
+                <rect x={startX + 2} y={lineY - ROW_H} width={RIGHT_EDGE - startX - 6} height={ROW_H} />
+              </clipPath>
+            );
+          })}
         </defs>
 
-        {/* Paper Background */}
-        <rect
-          x="0"
-          y="0"
-          width="743"
-          height="1024"
-          fill="#faf9f6"
-          className="paper-bg"
-        />
+        {/* ============================================================== */}
+        {/* 1. CLEAN WHITE A3 PAPER BACKGROUND                             */}
+        {/* ============================================================== */}
+        <rect x="0" y="0" width={SHEET_W} height={SHEET_H} fill="#ffffff" />
 
         {/* ============================================================== */}
-        {/* 1. TITLE: "HABIT TRACKER"                                       */}
+        {/* 2. TOP HEADER BANNERS ("Habit Tracker" & "Month")              */}
         {/* ============================================================== */}
-        <g id="title-group" transform="translate(371.5, 84)">
+        <g id="top-header-banners">
+          {/* Left Gold Banner */}
+          <polygon
+            points="40,24 736,24 818,106 40,106"
+            fill={THEME_COLORS.goldBanner}
+          />
+          {/* Thin Teal Underline Bar */}
+          <rect
+            x="40"
+            y="112"
+            width="732"
+            height="8"
+            fill={THEME_COLORS.tealBanner}
+          />
+          {/* Title: "Habit Tracker" */}
           <text
-            textAnchor="middle"
-            fill="#ffffff"
-            stroke="#262626"
-            strokeWidth="1.2"
-            letterSpacing="0.32em"
-            fontSize="34"
-            fontFamily="'Cinzel', 'Playfair Display SC', 'Times New Roman', serif"
-            fontWeight="700"
-            style={{ paintOrder: 'stroke fill' }}
+            x="60"
+            y="84"
+            fontSize="74"
+            fontStyle="italic"
+            fontFamily={DISPLAY_SERIF_FONT}
+            fill={THEME_COLORS.inkDefault}
           >
-            HABIT TRACKER
+            Habit Tracker
           </text>
+
+          {/* Right Teal Banner (bleeds to right edge) */}
+          <polygon
+            points={`744,24 ${SHEET_W},24 ${SHEET_W},106 826,106`}
+            fill={THEME_COLORS.tealBanner}
+          />
+          {/* Thin Gold Underline Bar */}
+          <rect
+            x="846"
+            y="112"
+            width={SHEET_W - 846}
+            height="8"
+            fill={THEME_COLORS.goldBanner}
+          />
+          {/* Heading: "Month" */}
+          <text
+            x="850"
+            y="86"
+            fontSize="44"
+            fontStyle="italic"
+            fontFamily={DISPLAY_SERIF_FONT}
+            fill={THEME_COLORS.inkDefault}
+          >
+            Month
+          </text>
+          {/* Month Horizontal Rule */}
+          <line
+            x1="848"
+            y1="91"
+            x2={SHEET_W}
+            y2="91"
+            stroke={THEME_COLORS.inkDefault}
+            strokeWidth="1.2"
+          />
+
+          {/* Month Editable Text */}
+          {!(activeEdit?.kind === 'month') && (
+            <text
+              x="1010"
+              y="84"
+              fontSize={fontStyle === 'handwriting' ? '32' : '22'}
+              fontWeight={fontStyle === 'handwriting' ? '700' : '600'}
+              fontFamily={penFontFamily}
+              fill={inkColor}
+              clipPath="url(#clip-month-line)"
+              className="pointer-events-none select-none"
+            >
+              {state.month}
+            </text>
+          )}
+          <rect
+            x="1002"
+            y="42"
+            width="250"
+            height="48"
+            fill="transparent"
+            className="editable-zone-hover"
+            style={{ cursor: 'text' }}
+            onClick={() => setActiveEdit({ kind: 'month', index: 0 })}
+          />
         </g>
 
         {/* ============================================================== */}
-        {/* 2. TOP-LEFT: MONTHLY HABITS TABLE                              */}
+        {/* 3. LEFT SIDE: 10 RAINBOW HORIZONTAL BARS + "Daily" HEADING     */}
         {/* ============================================================== */}
-        <g id="monthly-habits-table">
-          {/* Table Container Rect */}
-          <rect
-            x="58"
-            y="143"
-            width="332"
-            height="141"
-            fill="#ffffff"
-            stroke="#3a3a3a"
-            strokeWidth="1"
-          />
+        <g id="daily-habit-bars">
+          {TRACK_COLORS.map((pastelColor, i) => {
+            const yStart = CY - R_OUT + i * TRACK_H;
+            const habit = state.dailyHabits[i] || { id: i + 1, num: `${i + 1}`, name: '' };
+            const isEditing = activeEdit?.kind === 'daily' && activeEdit.index === i;
 
-          {/* Header Row */}
-          <line x1="58" y1="167" x2="390" y2="167" stroke="#3a3a3a" strokeWidth="1" />
-          <line x1="127" y1="143" x2="127" y2="284" stroke="#3a3a3a" strokeWidth="1" />
-
-          {/* Header Texts */}
-          <text
-            x="92.5"
-            y="159"
-            textAnchor="middle"
-            fontSize="14"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
-          >
-            yes/no
-          </text>
-          <text
-            x="258.5"
-            y="159"
-            textAnchor="middle"
-            fontSize="14"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
-          >
-            monthly habits
-          </text>
-
-          {/* 5 Rows */}
-          {TOP_ROW_COLORS.map((color, i) => {
-            const yStart = 167 + i * 23.4;
-            const habit = state.monthlyHabits[i] || { name: '', status: '' };
             return (
-              <g key={`monthly-row-${i}`}>
-                {/* Row Background Fill */}
+              <g key={`daily-bar-${i}`}>
+                {/* Saturated Number Square (1–10) */}
                 <rect
-                  x="58"
+                  x={BAR_X}
                   y={yStart}
-                  width="332"
-                  height="23.4"
-                  fill={color}
-                  stroke="#3a3a3a"
-                  strokeWidth="0.8"
-                />
-                {/* Horizontal divider */}
-                {i < 4 && (
-                  <line
-                    x1="58"
-                    y1={yStart + 23.4}
-                    x2="390"
-                    y2={yStart + 23.4}
-                    stroke="#3a3a3a"
-                    strokeWidth="0.8"
-                  />
-                )}
-
-                {/* Yes/No Cell (Clickable) */}
-                <rect
-                  x="58"
-                  y={yStart}
-                  width="69"
-                  height="23.4"
-                  fill="transparent"
-                  className="cursor-pointer hover:opacity-80"
-                  onClick={() => handleMonthlyStatusToggle(i)}
+                  width={NUM_BOX_W}
+                  height={TRACK_H}
+                  fill={NUMBER_BOX_COLORS[i]}
                 />
                 <text
-                  x="92.5"
-                  y={yStart + 16.5}
-                  textAnchor="middle"
-                  fontSize={fontStyle === 'handwriting' ? '20' : '14'}
-                  fontFamily={fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif"}
-                  fontWeight={fontStyle === 'handwriting' ? '700' : '600'}
-                  fill={inkColor}
+                  x={BAR_X + 6}
+                  y={yStart + 15.5}
+                  fontSize="12.5"
+                  fontFamily="'Inter', sans-serif"
+                  fontWeight="500"
+                  fill="#222222"
                   className="pointer-events-none select-none"
                 >
-                  {habit.status}
+                  {habit.num || i + 1}
                 </text>
 
-                {/* Habit Name Cell (Editable) */}
-                <foreignObject
-                  x="132"
-                  y={yStart + 0.5}
-                  width="253"
-                  height="22"
-                  className="overflow-visible"
-                >
-                  <input
-                    type="text"
-                    value={habit.name}
-                    onChange={(e) => {
-                      const updated = [...state.monthlyHabits];
-                      updated[i] = { ...updated[i], name: e.target.value };
-                      setState({ ...state, monthlyHabits: updated });
-                    }}
-                    placeholder=""
-                    className={`w-full h-full bg-transparent border-0 outline-none px-1 text-sm leading-none ${
-                      fontStyle === 'handwriting'
-                        ? 'font-handwriting text-xl text-blue-900 tracking-wide'
-                        : 'font-sans text-xs text-stone-900'
-                    }`}
-                    style={{
-                      color: inkColor,
-                      fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                    }}
-                  />
-                </foreignObject>
+                {/* Pastel Habit Name Bar */}
+                <rect
+                  x={BAR_TEXT_X}
+                  y={yStart}
+                  width={BAR_TEXT_W}
+                  height={TRACK_H}
+                  fill={pastelColor}
+                />
+
+                {/* Habit Name Text (Native SVG for crisp export) */}
+                {!isEditing && (
+                  <text
+                    x={BAR_TEXT_X + 8}
+                    y={yStart + (fontStyle === 'handwriting' ? 16.5 : 15)}
+                    fontSize={fontStyle === 'handwriting' ? '20' : '13'}
+                    fontWeight={fontStyle === 'handwriting' ? '600' : '500'}
+                    fontFamily={penFontFamily}
+                    fill={inkColor}
+                    clipPath={`url(#clip-daily-${i})`}
+                    className="pointer-events-none select-none"
+                  >
+                    {habit.name}
+                  </text>
+                )}
+
+                {/* Clickable Edit Hitbox */}
+                <rect
+                  x={BAR_TEXT_X}
+                  y={yStart}
+                  width={BAR_TEXT_W}
+                  height={TRACK_H}
+                  fill="transparent"
+                  className="editable-zone-hover"
+                  style={{ cursor: 'text' }}
+                  onClick={() => setActiveEdit({ kind: 'daily', index: i })}
+                />
               </g>
             );
           })}
+
+          {/* Crisp horizontal lines across the 10 pastel bars (matching PDF) */}
+          {Array.from({ length: 11 }, (_, idx) => {
+            const yLine = CY - R_OUT + idx * TRACK_H;
+            return (
+              <line
+                key={`bar-h-line-${idx}`}
+                x1={BAR_TEXT_X}
+                y1={yLine}
+                x2={CX}
+                y2={yLine}
+                stroke={THEME_COLORS.gridStroke}
+                strokeWidth="0.75"
+                className="pointer-events-none"
+              />
+            );
+          })}
+
+          {/* Heading: "Daily" in the open gap below Bar 10 and above Day 31 */}
+          <text
+            x="48"
+            y="464"
+            fontSize="44"
+            fontStyle="italic"
+            fontFamily={DISPLAY_SERIF_FONT}
+            fill={THEME_COLORS.inkDefault}
+          >
+            Daily
+          </text>
         </g>
 
         {/* ============================================================== */}
-        {/* 3. TOP-RIGHT: WEEKLY HABITS TABLE                              */}
+        {/* 4. 270-DEGREE RAINBOW WHEEL (12 o'clock clockwise to 9 o'clock) */}
         {/* ============================================================== */}
-        <g id="weekly-habits-table">
-          {/* Table Container Rect */}
-          <rect
-            x="440"
-            y="143"
-            width="282"
-            height="141"
-            fill="#ffffff"
-            stroke="#3a3a3a"
-            strokeWidth="1"
+        <g id="circular-tracker-wheel">
+          {/* Outer Olive-Gold Ring with Day Numbers (1 to TOTAL_DAYS) */}
+          {Array.from({ length: TOTAL_DAYS }, (_, dIdx) => {
+            const dayNum = dIdx + 1;
+            const startAngle = -90 + dIdx * DEG_PER_DAY;
+            const endAngle = -90 + (dIdx + 1) * DEG_PER_DAY;
+            const midAngle = (startAngle + endAngle) / 2;
+            const rMid = (R_OUT + R_HEADER) / 2;
+            const pos = polarToCartesian(CX, CY, rMid, midAngle);
+            const pathD = describeSector(CX, CY, R_OUT, R_HEADER, startAngle, endAngle);
+
+            // Angle from 12 o'clock clockwise (0°..270°)
+            const clockAngle = midAngle + 90;
+            const textRotation = clockAngle > 130 ? clockAngle - 180 : clockAngle;
+
+            return (
+              <g key={`day-header-${dayNum}`}>
+                <path
+                  d={pathD}
+                  fill={THEME_COLORS.wheelRing}
+                  stroke={THEME_COLORS.gridStroke}
+                  strokeWidth="0.75"
+                />
+                <text
+                  x={pos.x}
+                  y={pos.y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize="11.5"
+                  fontFamily="'Inter', sans-serif"
+                  fontWeight="500"
+                  fill="#222222"
+                  transform={`rotate(${textRotation}, ${pos.x}, ${pos.y})`}
+                  className="pointer-events-none select-none"
+                >
+                  {dayNum}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* 10 Concentric Inner Habit Tracks */}
+          {Array.from({ length: TOTAL_DAYS }, (_, dIdx) => {
+            const dayNum = dIdx + 1;
+            const startAngle = -90 + dIdx * DEG_PER_DAY;
+            const endAngle = -90 + (dIdx + 1) * DEG_PER_DAY;
+            const midAngle = (startAngle + endAngle) / 2;
+            const clockAngle = midAngle + 90;
+            const checkRotation = clockAngle > 130 ? clockAngle - 180 : clockAngle;
+
+            return (
+              <g key={`day-col-${dayNum}`}>
+                {TRACK_COLORS.map((color, hIdx) => {
+                  // Track 0 (Row 1) is outermost; Track 9 (Row 10) is innermost
+                  const innerR = R_IN + (NUM_TRACKS - 1 - hIdx) * TRACK_H;
+                  const outerR = innerR + TRACK_H;
+                  const rMid = (innerR + outerR) / 2;
+                  const pos = polarToCartesian(CX, CY, rMid, midAngle);
+                  const pathD = describeSector(CX, CY, innerR, outerR, startAngle, endAngle);
+                  const isChecked = Boolean(state.checks[`${hIdx}-${dayNum}`]);
+
+                  return (
+                    <g
+                      key={`cell-${hIdx}-${dayNum}`}
+                      className="cursor-pointer"
+                      onClick={() => handleWheelCellClick(hIdx, dayNum)}
+                    >
+                      <path
+                        d={pathD}
+                        fill={color}
+                        stroke={THEME_COLORS.gridStroke}
+                        strokeWidth="0.75"
+                        className="wheel-cell-sector"
+                      />
+                      {isChecked && (
+                        <g
+                          transform={`translate(${pos.x}, ${pos.y}) rotate(${checkRotation})`}
+                          className="pointer-events-none"
+                        >
+                          <path
+                            d="M -4.2 -0.6 L -1.1 3.6 L 5.0 -4.4"
+                            fill="none"
+                            stroke={inkColor}
+                            strokeWidth="2.1"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </g>
+                      )}
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          })}
+
+          {/* Crisp 9 o'clock end radial line */}
+          <line
+            x1={innerEndPt.x}
+            y1={innerEndPt.y}
+            x2={outerEndPt.x}
+            y2={outerEndPt.y}
+            stroke={THEME_COLORS.gridStroke}
+            strokeWidth="0.85"
+            className="pointer-events-none"
           />
 
-          {/* Header Horizontal Line */}
-          <line x1="440" y1="167" x2="722" y2="167" stroke="#3a3a3a" strokeWidth="1" />
+          {/* Crisp 12 o'clock seam line */}
+          <line
+            x1={CX}
+            y1={CY - R_HEADER}
+            x2={CX}
+            y2={CY - R_IN}
+            stroke={THEME_COLORS.gridStroke}
+            strokeWidth="0.85"
+            className="pointer-events-none"
+          />
 
-          {/* Vertical Divider between Habit Name and Yes/No weeks */}
-          <line x1="621" y1="143" x2="621" y2="284" stroke="#3a3a3a" strokeWidth="1" />
+          {/* Inner hole arc border */}
+          <path
+            d={`M ${CX} ${CY - R_IN} A ${R_IN} ${R_IN} 0 1 1 ${innerEndPt.x} ${innerEndPt.y}`}
+            fill="none"
+            stroke={THEME_COLORS.gridStroke}
+            strokeWidth="0.85"
+            className="pointer-events-none"
+          />
+        </g>
 
-          {/* 5 Weekly Sub-columns for Yes/No */}
-          {[1, 2, 3, 4].map((w) => (
-            <line
-              key={`week-vert-${w}`}
-              x1={621 + w * 20.2}
-              y1="167"
-              x2={621 + w * 20.2}
-              y2="284"
-              stroke="#3a3a3a"
-              strokeWidth="0.8"
-            />
-          ))}
-
-          {/* Header Texts */}
+        {/* ============================================================== */}
+        {/* 5. TOP-RIGHT: "Weekly" + 5-COLUMN GRID (1..5)                  */}
+        {/* ============================================================== */}
+        <g id="weekly-section">
           <text
-            x="530.5"
-            y="159"
-            textAnchor="middle"
-            fontSize="14"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
+            x="644"
+            y="196"
+            fontSize="44"
+            fontStyle="italic"
+            fontFamily={DISPLAY_SERIF_FONT}
+            fill={THEME_COLORS.inkDefault}
           >
-            weekly habits
-          </text>
-          <text
-            x="671.5"
-            y="159"
-            textAnchor="middle"
-            fontSize="14"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
-          >
-            yes/no
+            Weekly
           </text>
 
-          {/* 5 Rows */}
-          {TOP_ROW_COLORS.map((color, i) => {
-            const yStart = 167 + i * 23.4;
-            const habit = state.weeklyHabits[i] || { name: '', weeks: [false, false, false, false, false] };
+          {/* Header row: 1 2 3 4 5 */}
+          {[1, 2, 3, 4, 5].map((num, cIdx) => {
+            const cellX = WEEKLY_GRID_X + cIdx * COL_W;
+            const headerY = WEEKLY_TOP_Y - ROW_H;
             return (
-              <g key={`weekly-row-${i}`}>
-                {/* Row Background Fill */}
+              <g key={`weekly-col-hdr-${num}`}>
                 <rect
-                  x="440"
-                  y={yStart}
-                  width="282"
-                  height="23.4"
-                  fill={color}
-                  stroke="#3a3a3a"
-                  strokeWidth="0.8"
+                  x={cellX}
+                  y={headerY}
+                  width={COL_W}
+                  height={ROW_H}
+                  fill="#ffffff"
+                  stroke={THEME_COLORS.gridStroke}
+                  strokeWidth="0.75"
                 />
-                {/* Horizontal divider */}
-                {i < 4 && (
-                  <line
-                    x1="440"
-                    y1={yStart + 23.4}
-                    x2="722"
-                    y2={yStart + 23.4}
-                    stroke="#3a3a3a"
-                    strokeWidth="0.8"
-                  />
+                <text
+                  x={cellX + COL_W / 2}
+                  y={headerY + ROW_H / 2 + 1}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize="14.5"
+                  fontStyle="italic"
+                  fontFamily="'Cormorant Garamond', 'Playfair Display', Georgia, serif"
+                  fontWeight="600"
+                  fill={THEME_COLORS.inkDefault}
+                >
+                  {num}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Top horizontal line under "Weekly" & header */}
+          <line
+            x1={WEEKLY_LINE_STARTS[0]}
+            y1={WEEKLY_TOP_Y}
+            x2={RIGHT_EDGE}
+            y2={WEEKLY_TOP_Y}
+            stroke={THEME_COLORS.gridStroke}
+            strokeWidth="0.75"
+          />
+
+          {/* 10 Weekly Data Rows */}
+          {Array.from({ length: 10 }, (_, rIdx) => {
+            const yTop = WEEKLY_TOP_Y + rIdx * ROW_H;
+            const yBottom = yTop + ROW_H;
+            const lineStartX = WEEKLY_LINE_STARTS[rIdx + 1];
+            const habit = state.weeklyHabits[rIdx] || {
+              id: rIdx + 1,
+              name: '',
+              weeks: [false, false, false, false, false],
+            };
+            const isEditing = activeEdit?.kind === 'weekly' && activeEdit.index === rIdx;
+
+            return (
+              <g key={`weekly-row-${rIdx}`}>
+                {/* Ruled horizontal bottom line extending left around the wheel */}
+                <line
+                  x1={lineStartX}
+                  y1={yBottom}
+                  x2={RIGHT_EDGE}
+                  y2={yBottom}
+                  stroke={THEME_COLORS.gridStroke}
+                  strokeWidth="0.75"
+                />
+
+                {/* Weekly habit text */}
+                {!isEditing && (
+                  <text
+                    x={lineStartX + 6}
+                    y={yBottom - 6}
+                    fontSize={fontStyle === 'handwriting' ? '20' : '13'}
+                    fontWeight={fontStyle === 'handwriting' ? '600' : '500'}
+                    fontFamily={penFontFamily}
+                    fill={inkColor}
+                    clipPath={`url(#clip-weekly-${rIdx})`}
+                    className="pointer-events-none select-none"
+                  >
+                    {habit.name}
+                  </text>
                 )}
 
-                {/* Habit Name Cell (Editable) */}
-                <foreignObject
-                  x="445"
-                  y={yStart + 0.5}
-                  width="172"
-                  height="22"
-                  className="overflow-visible"
-                >
-                  <input
-                    type="text"
-                    value={habit.name}
-                    onChange={(e) => {
-                      const updated = [...state.weeklyHabits];
-                      updated[i] = { ...updated[i], name: e.target.value };
-                      setState({ ...state, weeklyHabits: updated });
-                    }}
-                    placeholder=""
-                    className={`w-full h-full bg-transparent border-0 outline-none px-1 text-sm leading-none ${
-                      fontStyle === 'handwriting'
-                        ? 'font-handwriting text-xl text-blue-900 tracking-wide'
-                        : 'font-sans text-xs text-stone-900'
-                    }`}
-                    style={{
-                      color: inkColor,
-                      fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                    }}
-                  />
-                </foreignObject>
+                {/* Editable text hitbox */}
+                <rect
+                  x={lineStartX}
+                  y={yTop}
+                  width={WEEKLY_GRID_X - lineStartX}
+                  height={ROW_H}
+                  fill="transparent"
+                  className="editable-zone-hover"
+                  style={{ cursor: 'text' }}
+                  onClick={() => setActiveEdit({ kind: 'weekly', index: rIdx })}
+                />
 
-                {/* 5 Weekly Checkboxes */}
-                {[0, 1, 2, 3, 4].map((w) => {
-                  const xCell = 621 + w * 20.2;
-                  const isChecked = habit.weeks[w];
+                {/* 5 Weekly Checkbox Cells */}
+                {[0, 1, 2, 3, 4].map((wIdx) => {
+                  const cellX = WEEKLY_GRID_X + wIdx * COL_W;
+                  const isChecked = Boolean(habit.weeks?.[wIdx]);
                   return (
-                    <g key={`weekly-check-${i}-${w}`}>
+                    <g
+                      key={`weekly-cell-${rIdx}-${wIdx}`}
+                      className="cursor-pointer"
+                      onClick={() => handleWeeklyCheckToggle(rIdx, wIdx)}
+                    >
                       <rect
-                        x={xCell}
-                        y={yStart}
-                        width="20.2"
-                        height="23.4"
+                        x={cellX}
+                        y={yTop}
+                        width={COL_W}
+                        height={ROW_H}
                         fill="transparent"
-                        className="cursor-pointer hover:bg-black/5"
-                        onClick={() => handleWeeklyCheckToggle(i, w)}
+                        stroke={THEME_COLORS.gridStroke}
+                        strokeWidth="0.75"
+                        className="editable-zone-hover"
                       />
                       {isChecked && (
                         <path
-                          d={`M ${xCell + 5.5} ${yStart + 12} L ${xCell + 8.5} ${yStart + 16} L ${xCell + 15} ${yStart + 7}`}
+                          d={`M ${cellX + 13} ${yTop + 12.5} L ${cellX + 17.5} ${yTop + 17.5} L ${cellX + 26.5} ${yTop + 7}`}
                           fill="none"
                           stroke={inkColor}
-                          strokeWidth="1.8"
+                          strokeWidth="2.1"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           className="pointer-events-none"
@@ -562,503 +916,209 @@ export default function HabitTrackerSheet({
         </g>
 
         {/* ============================================================== */}
-        {/* 4. NOTES LINES BELOW WEEKLY HABITS (Tapered)                   */}
+        {/* 6. MIDDLE-RIGHT: "Monthly" + 4 ROWS & 1 STATUS COLUMN          */}
         {/* ============================================================== */}
-        <g id="top-right-notes">
-          {[
-            { y: 304, x1: 538 },
-            { y: 329, x1: 588 },
-            { y: 354, x1: 616 },
-            { y: 379, x1: 642 },
-            { y: 404, x1: 668 },
-            { y: 429, x1: 702 },
-          ].map((line, idx) => (
-            <g key={`top-right-line-${idx}`}>
-              <line
-                x1={line.x1}
-                y1={line.y}
-                x2="722"
-                y2={line.y}
-                stroke="#666666"
-                strokeWidth="0.9"
-              />
-              <foreignObject
-                x={line.x1}
-                y={line.y - 18}
-                width={722 - line.x1}
-                height="19"
-              >
-                <input
-                  type="text"
-                  value={state.notes.topRight[idx] || ''}
-                  onChange={(e) => {
-                    const notes = [...state.notes.topRight];
-                    notes[idx] = e.target.value;
-                    setState({ ...state, notes: { ...state.notes, topRight: notes } });
-                  }}
-                  className="w-full h-full bg-transparent border-0 outline-none px-1 text-xs leading-none"
-                  style={{
-                    color: inkColor,
-                    fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                    fontSize: fontStyle === 'handwriting' ? '17px' : '11px',
-                  }}
-                />
-              </foreignObject>
-            </g>
-          ))}
-        </g>
+        <g id="monthly-section">
+          <text
+            x="832"
+            y="508"
+            fontSize="44"
+            fontStyle="italic"
+            fontFamily={DISPLAY_SERIF_FONT}
+            fill={THEME_COLORS.inkDefault}
+          >
+            Monthly
+          </text>
 
-        {/* ============================================================== */}
-        {/* 5. DAILY HABITS HORIZONTAL TABLE (Left Side)                   */}
-        {/* ============================================================== */}
-        <g id="daily-habits-horizontal-table">
-          {/* Header Row: "№" and "daily habits" */}
-          <rect
-            x="58"
-            y="333.2"
-            width="332"
-            height="23.8"
-            fill="#ffffff"
-            stroke="#3a3a3a"
-            strokeWidth="1"
+          {/* Top line under "Monthly" */}
+          <line
+            x1={BASE_LEFT_X}
+            y1={MONTHLY_TOP_Y}
+            x2={RIGHT_EDGE}
+            y2={MONTHLY_TOP_Y}
+            stroke={THEME_COLORS.gridStroke}
+            strokeWidth="0.75"
           />
-          <line x1="127" y1="333.2" x2="127" y2="595" stroke="#3a3a3a" strokeWidth="1" />
-          <line x1="58" y1="357" x2="390" y2="357" stroke="#3a3a3a" strokeWidth="1" />
 
-          {/* Header text */}
-          <text
-            x="92.5"
-            y="350"
-            textAnchor="middle"
-            fontSize="14"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
-          >
-            №
-          </text>
-          <text
-            x="258.5"
-            y="350"
-            textAnchor="middle"
-            fontSize="14"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
-          >
-            daily habits
-          </text>
+          {/* 4 Monthly Rows */}
+          {Array.from({ length: 4 }, (_, rIdx) => {
+            const yTop = MONTHLY_TOP_Y + rIdx * ROW_H;
+            const yBottom = yTop + ROW_H;
+            const habit = state.monthlyHabits[rIdx] || { id: rIdx + 1, name: '', status: '' };
+            const isEditing = activeEdit?.kind === 'monthly' && activeEdit.index === rIdx;
 
-          {/* 10 Habit Rows */}
-          {TRACK_COLORS.map((color, i) => {
-            const yStart = 357 + i * 23.8;
-            const habit = state.dailyHabits[i] || { num: `${i + 1}`, name: '' };
             return (
-              <g key={`daily-row-${i}`}>
-                {/* Background color */}
-                <rect
-                  x="58"
-                  y={yStart}
-                  width="332"
-                  height="23.8"
-                  fill={color}
-                  stroke="#3a3a3a"
-                  strokeWidth="0.8"
+              <g key={`monthly-row-${rIdx}`}>
+                <line
+                  x1={BASE_LEFT_X}
+                  y1={yBottom}
+                  x2={RIGHT_EDGE}
+                  y2={yBottom}
+                  stroke={THEME_COLORS.gridStroke}
+                  strokeWidth="0.75"
                 />
-                {/* Horizontal divider */}
-                {i < 9 && (
-                  <line
-                    x1="58"
-                    y1={yStart + 23.8}
-                    x2="390"
-                    y2={yStart + 23.8}
-                    stroke="#3a3a3a"
-                    strokeWidth="0.8"
-                  />
+
+                {/* Monthly habit text */}
+                {!isEditing && (
+                  <text
+                    x={BASE_LEFT_X + 6}
+                    y={yBottom - 6}
+                    fontSize={fontStyle === 'handwriting' ? '20' : '13'}
+                    fontWeight={fontStyle === 'handwriting' ? '600' : '500'}
+                    fontFamily={penFontFamily}
+                    fill={inkColor}
+                    clipPath={`url(#clip-monthly-${rIdx})`}
+                    className="pointer-events-none select-none"
+                  >
+                    {habit.name}
+                  </text>
                 )}
 
-                {/* Habit Number (Editable or Display) */}
-                <foreignObject
-                  x="58"
-                  y={yStart + 0.5}
-                  width="69"
-                  height="22"
-                  className="overflow-visible text-center"
+                {/* Editable hitbox */}
+                <rect
+                  x={BASE_LEFT_X}
+                  y={yTop}
+                  width={MONTHLY_COL_X - BASE_LEFT_X}
+                  height={ROW_H}
+                  fill="transparent"
+                  className="editable-zone-hover"
+                  style={{ cursor: 'text' }}
+                  onClick={() => setActiveEdit({ kind: 'monthly', index: rIdx })}
+                />
+
+                {/* Right-hand checkbox box */}
+                <g
+                  className="cursor-pointer"
+                  onClick={() => handleMonthlyStatusToggle(rIdx)}
                 >
-                  <input
-                    type="text"
-                    value={habit.num}
-                    onChange={(e) => {
-                      const updated = [...state.dailyHabits];
-                      updated[i] = { ...updated[i], num: e.target.value };
-                      setState({ ...state, dailyHabits: updated });
-                    }}
-                    className="w-full h-full text-center bg-transparent border-0 outline-none text-xs leading-none font-bold"
-                    style={{
-                      color: habit.name ? inkColor : '#444444',
-                      fontFamily:
-                        fontStyle === 'handwriting' && habit.name
-                          ? "'Caveat', cursive"
-                          : "'Inter', sans-serif",
-                      fontSize: fontStyle === 'handwriting' && habit.name ? '20px' : '13px',
-                    }}
+                  <rect
+                    x={MONTHLY_COL_X}
+                    y={yTop}
+                    width={COL_W}
+                    height={ROW_H}
+                    fill="transparent"
+                    stroke={THEME_COLORS.gridStroke}
+                    strokeWidth="0.75"
+                    className="editable-zone-hover"
                   />
-                </foreignObject>
-
-                {/* Habit Name (Editable) */}
-                <foreignObject
-                  x="132"
-                  y={yStart + 0.5}
-                  width="253"
-                  height="22"
-                  className="overflow-visible"
-                >
-                  <input
-                    type="text"
-                    value={habit.name}
-                    onChange={(e) => {
-                      const updated = [...state.dailyHabits];
-                      updated[i] = { ...updated[i], name: e.target.value };
-                      setState({ ...state, dailyHabits: updated });
-                    }}
-                    placeholder=""
-                    className={`w-full h-full bg-transparent border-0 outline-none px-1 text-sm leading-none ${
-                      fontStyle === 'handwriting'
-                        ? 'font-handwriting text-xl text-blue-900 tracking-wide'
-                        : 'font-sans text-xs text-stone-900'
-                    }`}
-                    style={{
-                      color: inkColor,
-                      fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                    }}
-                  />
-                </foreignObject>
+                  {habit.status && (
+                    <path
+                      d={`M ${MONTHLY_COL_X + 13} ${yTop + 12.5} L ${MONTHLY_COL_X + 17.5} ${yTop + 17.5} L ${MONTHLY_COL_X + 26.5} ${yTop + 7}`}
+                      fill="none"
+                      stroke={inkColor}
+                      strokeWidth="2.1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="pointer-events-none"
+                    />
+                  )}
+                </g>
               </g>
-            );
-          })}
-
-          {/* Left Table Outer Left Border */}
-          <line x1="58" y1="333.2" x2="58" y2="595" stroke="#3a3a3a" strokeWidth="1" />
-          {/* Bottom border of track 10 */}
-          <line x1="58" y1="595" x2="390" y2="595" stroke="#3a3a3a" strokeWidth="1" />
-        </g>
-
-        {/* ============================================================== */}
-        {/* 6. CIRCULAR WHEEL TRACKER (Seamlessly connects at x=390)       */}
-        {/* ============================================================== */}
-        <g id="circular-tracker-wheel">
-          {/* Outer Header Ring with Day Numbers (1 to TOTAL_DAYS) */}
-          {Array.from({ length: TOTAL_DAYS }, (_, dIdx) => {
-            const dayNum = dIdx + 1;
-            const startAngle = -90 + dIdx * DEG_PER_DAY;
-            const endAngle = -90 + (dIdx + 1) * DEG_PER_DAY;
-            const midAngle = (startAngle + endAngle) / 2;
-            const rMid = (R_OUT + R_HEADER) / 2;
-            const pos = polarToCartesian(CX, CY, rMid, midAngle);
-            const pathD = describeSector(CX, CY, R_OUT, R_HEADER, startAngle, endAngle);
-
-            return (
-              <g key={`day-header-${dayNum}`}>
-                <path
-                  d={pathD}
-                  fill="#ffffff"
-                  stroke="#3a3a3a"
-                  strokeWidth="0.8"
-                />
-                <text
-                  x={pos.x}
-                  y={pos.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize="12.5"
-                  fontFamily="'Inter', sans-serif"
-                  fontWeight="600"
-                  fill="#2c2c2c"
-                  transform={`rotate(${midAngle + 90}, ${pos.x}, ${pos.y})`}
-                  className="pointer-events-none select-none"
-                >
-                  {dayNum}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Concentric Habit Rings & Interactive Cells */}
-          {Array.from({ length: TOTAL_DAYS }, (_, dIdx) => {
-            const dayNum = dIdx + 1;
-            const startAngle = -90 + dIdx * DEG_PER_DAY;
-            const endAngle = -90 + (dIdx + 1) * DEG_PER_DAY;
-            const midAngle = (startAngle + endAngle) / 2;
-
-            return (
-              <g key={`day-column-${dayNum}`}>
-                {TRACK_COLORS.map((color, hIdx) => {
-                  // hIdx 0 is Row 1 (outermost track), hIdx 9 is Row 10 (innermost track)
-                  const innerR = R_IN + (NUM_TRACKS - 1 - hIdx) * TRACK_H;
-                  const outerR = innerR + TRACK_H;
-                  const rMid = (innerR + outerR) / 2;
-                  const pos = polarToCartesian(CX, CY, rMid, midAngle);
-                  const pathD = describeSector(CX, CY, innerR, outerR, startAngle, endAngle);
-                  const isChecked = Boolean(state.checks[`${hIdx}-${dayNum}`]);
-
-                  return (
-                    <g
-                      key={`cell-${hIdx}-${dayNum}`}
-                      className="cursor-pointer group"
-                      onClick={() => handleWheelCellClick(hIdx, dayNum)}
-                    >
-                      {/* Cell Sector Path */}
-                      <path
-                        d={pathD}
-                        fill={color}
-                        stroke="#3a3a3a"
-                        strokeWidth="0.8"
-                        className="transition-opacity duration-150 hover:opacity-85"
-                      />
-
-                      {/* Checkmark in cell */}
-                      {isChecked && (
-                        <g
-                          transform={`translate(${pos.x}, ${pos.y}) rotate(${midAngle + 90})`}
-                          className="pointer-events-none"
-                        >
-                          <path
-                            d="M -4.2 -0.8 L -1.2 3.8 L 5.2 -4.8"
-                            fill="none"
-                            stroke={inkColor}
-                            strokeWidth="1.9"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            filter="url(#ink-bleed)"
-                          />
-                        </g>
-                      )}
-                    </g>
-                  );
-                })}
-              </g>
-            );
-          })}
-
-          {/* Boundary line at the end of the last day */}
-          {(() => {
-            const endAngle = -90 + TOTAL_DAYS * DEG_PER_DAY;
-            const pInner = polarToCartesian(CX, CY, R_IN, endAngle);
-            const pOuter = polarToCartesian(CX, CY, R_HEADER, endAngle);
-            return (
-              <line
-                x1={pInner.x}
-                y1={pInner.y}
-                x2={pOuter.x}
-                y2={pOuter.y}
-                stroke="#3a3a3a"
-                strokeWidth="1.2"
-              />
-            );
-          })()}
-
-          {/* The Inner Circle Arc (Hole border) */}
-          <path
-            d={`M 390 ${CY - R_IN} A ${R_IN} ${R_IN} 0 1 1 ${
-              polarToCartesian(CX, CY, R_IN, -90 + TOTAL_DAYS * DEG_PER_DAY).x
-            } ${
-              polarToCartesian(CX, CY, R_IN, -90 + TOTAL_DAYS * DEG_PER_DAY).y
-            }`}
-            fill="none"
-            stroke="#3a3a3a"
-            strokeWidth="1"
-          />
-        </g>
-
-        {/* ============================================================== */}
-        {/* 7. NOTES FAN RAYS (Radiating from R_IN outwards)                */}
-        {/* ============================================================== */}
-        <g id="notes-fan-rays">
-          {/* Continuation of rays from end of last day towards 180° */}
-          {Array.from({ length: 8 }, (_, idx) => {
-            const rayAngle = -90 + TOTAL_DAYS * DEG_PER_DAY + (idx + 1) * DEG_PER_DAY;
-            if (rayAngle > 185) return null;
-            const pStart = polarToCartesian(CX, CY, R_IN, rayAngle);
-            // Staggered outward reach
-            const rayLength = idx === 0 ? 250 : idx === 1 ? 230 : idx === 2 ? 210 : idx === 3 ? 190 : 170;
-            const pEnd = polarToCartesian(CX, CY, R_IN + rayLength, rayAngle);
-
-            return (
-              <line
-                key={`fan-ray-${idx}`}
-                x1={pStart.x}
-                y1={pStart.y}
-                x2={pEnd.x}
-                y2={pEnd.y}
-                stroke="#666666"
-                strokeWidth="0.9"
-              />
             );
           })}
         </g>
 
         {/* ============================================================== */}
-        {/* 8. "month:" SECTION                                            */}
+        {/* 7. BOTTOM-RIGHT: "Notes" + 6 CURVE-FOLLOWING RULED LINES       */}
         {/* ============================================================== */}
-        <g id="month-section" transform="translate(68, 642)">
+        <g id="notes-section">
           <text
-            x="0"
-            y="0"
-            fontSize="15"
-            fontFamily="'Inter', sans-serif"
-            fontWeight="500"
-            fill="#2c2c2c"
+            x="832"
+            y="678"
+            fontSize="44"
+            fontStyle="italic"
+            fontFamily={DISPLAY_SERIF_FONT}
+            fill={THEME_COLORS.inkDefault}
           >
-            month:
+            Notes
           </text>
-          {/* Ruled underline */}
-          <line x1="56" y1="5" x2="250" y2="5" stroke="#666666" strokeWidth="0.9" />
 
-          {/* Month input / display */}
-          <foreignObject x="58" y="-18" width="190" height="26">
-            <input
-              type="text"
-              value={state.month}
-              onChange={(e) => setState({ ...state, month: e.target.value })}
-              className="w-full h-full bg-transparent border-0 outline-none px-1 text-sm leading-none"
-              style={{
-                color: inkColor,
-                fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                fontSize: fontStyle === 'handwriting' ? '28px' : '15px',
-                fontWeight: fontStyle === 'handwriting' ? '700' : '600',
-              }}
-            />
-          </foreignObject>
-        </g>
+          {NOTES_LINE_STARTS.map((startX, idx) => {
+            const lineY = NOTES_TOP_Y + idx * ROW_H;
+            const editX = idx === 0 ? 975 : startX;
+            const isEditing = activeEdit?.kind === 'note' && activeEdit.index === idx;
+            const noteVal = state.notes?.[idx] || '';
 
-        {/* ============================================================== */}
-        {/* 9. "My notes:" SECTION                                         */}
-        {/* ============================================================== */}
-        <g id="my-notes-section" transform="translate(70, 725)">
-          <text
-            x="0"
-            y="0"
-            fontSize="26"
-            fontFamily="'Caveat', cursive"
-            fontWeight="700"
-            fill={inkColor}
-            style={{ transform: 'rotate(-4deg)' }}
-          >
-            My notes:
-          </text>
-          {/* Note input area on the fan */}
-          <foreignObject x="0" y="5" width="220" height="70">
-            <textarea
-              value={state.notes.myNotes}
-              onChange={(e) =>
-                setState({
-                  ...state,
-                  notes: { ...state.notes, myNotes: e.target.value },
-                })
-              }
-              placeholder="Write personal reflections..."
-              className="w-full h-full bg-transparent border-0 outline-none resize-none text-xs leading-relaxed"
-              style={{
-                color: inkColor,
-                fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                fontSize: fontStyle === 'handwriting' ? '19px' : '12px',
-              }}
-            />
-          </foreignObject>
-        </g>
-
-        {/* ============================================================== */}
-        {/* 10. BOTTOM-LEFT NOTES LINES                                    */}
-        {/* ============================================================== */}
-        <g id="bottom-left-notes">
-          {[
-            { y: 864, x2: 76 },
-            { y: 890, x2: 98 },
-            { y: 916, x2: 138 },
-            { y: 942, x2: 168 },
-            { y: 968, x2: 204 },
-          ].map((line, idx) => (
-            <g key={`bottom-left-line-${idx}`}>
-              <line
-                x1="58"
-                y1={line.y}
-                x2={line.x2}
-                y2={line.y}
-                stroke="#666666"
-                strokeWidth="0.9"
-              />
-              <foreignObject
-                x="58"
-                y={line.y - 18}
-                width={line.x2 - 58}
-                height="19"
-              >
-                <input
-                  type="text"
-                  value={state.notes.bottomLeft[idx] || ''}
-                  onChange={(e) => {
-                    const notes = [...state.notes.bottomLeft];
-                    notes[idx] = e.target.value;
-                    setState({ ...state, notes: { ...state.notes, bottomLeft: notes } });
-                  }}
-                  className="w-full h-full bg-transparent border-0 outline-none text-xs leading-none"
-                  style={{
-                    color: inkColor,
-                    fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                    fontSize: fontStyle === 'handwriting' ? '17px' : '11px',
-                  }}
+            return (
+              <g key={`notes-line-${idx}`}>
+                <line
+                  x1={startX}
+                  y1={lineY}
+                  x2={RIGHT_EDGE}
+                  y2={lineY}
+                  stroke={THEME_COLORS.gridStroke}
+                  strokeWidth="0.75"
                 />
-              </foreignObject>
-            </g>
-          ))}
-        </g>
 
-        {/* ============================================================== */}
-        {/* 11. BOTTOM-RIGHT NOTES LINES                                   */}
-        {/* ============================================================== */}
-        <g id="bottom-right-notes">
-          {[
-            { y: 864, x1: 678 },
-            { y: 890, x1: 648 },
-            { y: 916, x1: 618 },
-            { y: 942, x1: 588 },
-            { y: 968, x1: 588 },
-          ].map((line, idx) => (
-            <g key={`bottom-right-line-${idx}`}>
-              <line
-                x1={line.x1}
-                y1={line.y}
-                x2="722"
-                y2={line.y}
-                stroke="#666666"
-                strokeWidth="0.9"
-              />
-              <foreignObject
-                x={line.x1}
-                y={line.y - 18}
-                width={722 - line.x1}
-                height="19"
-              >
-                <input
-                  type="text"
-                  value={state.notes.bottomRight[idx] || ''}
-                  onChange={(e) => {
-                    const notes = [...state.notes.bottomRight];
-                    notes[idx] = e.target.value;
-                    setState({ ...state, notes: { ...state.notes, bottomRight: notes } });
-                  }}
-                  className="w-full h-full bg-transparent border-0 outline-none px-1 text-xs leading-none"
-                  style={{
-                    color: inkColor,
-                    fontFamily: fontStyle === 'handwriting' ? "'Caveat', cursive" : "'Inter', sans-serif",
-                    fontSize: fontStyle === 'handwriting' ? '17px' : '11px',
-                  }}
+                {!isEditing && (
+                  <text
+                    x={editX + 6}
+                    y={lineY - 6}
+                    fontSize={fontStyle === 'handwriting' ? '20' : '13'}
+                    fontWeight={fontStyle === 'handwriting' ? '600' : '500'}
+                    fontFamily={penFontFamily}
+                    fill={inkColor}
+                    clipPath={`url(#clip-note-${idx})`}
+                    className="pointer-events-none select-none"
+                  >
+                    {noteVal}
+                  </text>
+                )}
+
+                <rect
+                  x={editX}
+                  y={lineY - ROW_H}
+                  width={RIGHT_EDGE - editX}
+                  height={ROW_H}
+                  fill="transparent"
+                  className="editable-zone-hover"
+                  style={{ cursor: 'text' }}
+                  onClick={() => setActiveEdit({ kind: 'note', index: idx })}
                 />
-              </foreignObject>
-            </g>
-          ))}
+              </g>
+            );
+          })}
         </g>
       </svg>
+
+      {/* ================================================================ */}
+      {/* IN-PLACE HTML INPUT OVERLAY (Only mounted during active edit)    */}
+      {/* ================================================================ */}
+      {activeInput && (
+        <input
+          ref={inputRef}
+          type="text"
+          value={activeInput.value}
+          placeholder={activeInput.placeholder}
+          onChange={(e) => activeInput.onChange(e.target.value)}
+          onBlur={() => setActiveEdit(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setActiveEdit(null);
+            } else if (e.key === 'Enter' || e.key === 'Tab') {
+              e.preventDefault();
+              activeInput.onNext();
+            }
+          }}
+          className="no-print absolute bg-transparent border-0 outline-none"
+          style={{
+            left: `${(activeInput.x / SHEET_W) * 100}%`,
+            top: `${(activeInput.y / SHEET_H) * 100}%`,
+            width: `${(activeInput.w / SHEET_W) * 100}%`,
+            height: `${(activeInput.h / SHEET_H) * 100}%`,
+            color: inkColor,
+            fontFamily: penFontFamily,
+            fontSize: `${(activeInput.fontSizePx / SHEET_W) * 100}cqw`,
+            fontWeight: activeInput.fontWeight,
+            lineHeight: 1.1,
+            padding: '0 2px',
+            backgroundColor: 'rgba(255, 255, 255, 0.45)',
+            borderRadius: '2px',
+            boxShadow: `inset 0 -1.5px 0 ${inkColor}`,
+          }}
+        />
+      )}
     </div>
   );
 }
