@@ -62,7 +62,7 @@ export default function App() {
   const setSoundEnabled = (soundEnabled) => setPrefs((p) => ({ ...p, soundEnabled }));
 
   const handleZoom = (delta) => {
-    setZoomLevel((prev) => Math.min(Math.max(prev + delta, 0.5), 1.6));
+    setZoomLevel((prev) => Math.min(Math.max(Number((prev + delta).toFixed(2)), 0.6), 2.2));
   };
 
   const handleResetZoom = () => {
@@ -86,13 +86,13 @@ export default function App() {
       />
 
       {/* Main Workspace Area */}
-      <main className="flex-1 flex flex-col items-center justify-start p-3 sm:p-6 md:p-8 overflow-auto">
+      <main className="app-main flex-1 flex flex-col items-center justify-start overflow-auto">
         {showTip && (
-          <div className="no-print mb-4 w-full max-w-3xl bg-white/90 backdrop-blur border border-stone-300 rounded-xl px-4 py-2.5 shadow-xs flex items-center justify-between text-xs text-stone-700">
+          <div className="no-print tip-banner bg-white/90 backdrop-blur border border-stone-300 rounded-xl shadow-xs flex items-center justify-between text-xs text-stone-700">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
               <span>
-                <strong>Interactive A3 Sheet:</strong> Click any wheel cell or Weekly/Monthly box to toggle checkmarks. Click any colored bar, Month line, Weekly/Monthly line, or Notes line to type directly on the sheet.
+                <strong>Interactive A3 Sheet:</strong> Click any wheel cell or Weekly/Monthly box to toggle checkmarks. Click any colored bar, Month line, Weekly/Monthly line, or Notes line to type directly.
               </span>
             </div>
             <button
@@ -105,12 +105,14 @@ export default function App() {
           </div>
         )}
 
-        {/* A3 Landscape Paper Sheet Wrapper */}
-        <div
-          className="sheet-viewport-wrapper transition-transform duration-200 origin-top flex justify-center"
-          style={{ transform: `scale(${zoomLevel})` }}
-        >
-          <div className="paper-page bg-white text-stone-900 rounded-sm shadow-xl border border-stone-300/80 overflow-hidden relative">
+        {/* A3 Landscape Paper Sheet Wrapper (scales cleanly with zero edge clipping) */}
+        <div className="sheet-viewport-wrapper flex justify-center w-full">
+          <div
+            className="paper-page bg-white text-stone-900 rounded-sm shadow-xl border border-stone-300/80 overflow-hidden relative shrink-0"
+            style={{
+              width: `calc(min(1160px, 95vw) * ${zoomLevel})`,
+            }}
+          >
             <HabitTrackerSheet
               state={state}
               setState={setState}
@@ -125,9 +127,10 @@ export default function App() {
         {/* Floating Zoom Controls (bottom right) */}
         <div className="no-print fixed bottom-5 right-5 flex items-center gap-1.5 bg-stone-900/90 text-stone-100 backdrop-blur px-3 py-1.5 rounded-full shadow-lg border border-stone-700 text-xs z-30">
           <button
-            onClick={() => handleZoom(-0.15)}
+            onClick={() => handleZoom(-0.2)}
             className="p-1 hover:text-teal-300 transition-colors cursor-pointer"
             title="Zoom Out"
+            aria-label="Zoom Out"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -139,17 +142,19 @@ export default function App() {
             {Math.round(zoomLevel * 100)}%
           </button>
           <button
-            onClick={() => handleZoom(0.15)}
+            onClick={() => handleZoom(0.2)}
             className="p-1 hover:text-teal-300 transition-colors cursor-pointer"
             title="Zoom In"
+            aria-label="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <div className="w-px h-3.5 bg-stone-700 mx-0.5" />
           <button
-            onClick={() => setZoomLevel(1)}
+            onClick={handleResetZoom}
             className="p-1 hover:text-teal-300 transition-colors cursor-pointer"
             title="Fit Page"
+            aria-label="Fit Page"
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>

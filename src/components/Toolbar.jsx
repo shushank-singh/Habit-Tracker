@@ -103,160 +103,177 @@ export default function Toolbar({
     });
   };
 
+  const renderControlsCluster = () => (
+    <>
+      {/* Sample / Clear */}
+      <div className="tb-seg-group">
+        <button
+          onClick={loadSample}
+          className="tb-seg-btn"
+          title="Load sample habits and checkmarks"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>Sample</span>
+        </button>
+        <div className="tb-seg-divider" />
+        <button
+          onClick={clearSheet}
+          className="tb-seg-btn"
+          title="Clear all habits, checkmarks, and notes"
+        >
+          <Eraser className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <span>Clear</span>
+        </button>
+      </div>
+
+      {/* Month & Leap Toggle */}
+      <div className="tb-pill">
+        <Calendar className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+        <select
+          value={matchedMonth ? matchedMonth.name : ''}
+          onChange={handleMonthChange}
+          aria-label="Select Month"
+          className="tb-select"
+        >
+          {!matchedMonth && (
+            <option value="" className="bg-stone-800 text-white">
+              {state.month || 'Custom'} ({state.monthType}d)
+            </option>
+          )}
+          {MONTHS.map((m) => (
+            <option key={m.name} value={m.name} className="bg-stone-800 text-white">
+              {m.name} ({m.name === 'February' ? (state.monthType === 29 ? '29d' : '28d') : `${m.days}d`})
+            </option>
+          ))}
+        </select>
+        {isFebruary && (
+          <button
+            onClick={handleLeapToggle}
+            className={`tb-leap-btn ${state.monthType === 29 ? 'is-active' : ''}`}
+            title="Toggle Leap Year February (28 vs 29 days)"
+          >
+            {state.monthType === 29 ? '29d' : '28d'}
+          </button>
+        )}
+      </div>
+
+      {/* Ink Color Picker */}
+      <div className="tb-pill tb-ink-group">
+        <Palette className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+        {INK_PALETTES.map((p) => (
+          <button
+            key={p.name}
+            onClick={() => setInkColor(p.color)}
+            title={p.name}
+            aria-label={p.name}
+            className={`tb-ink-dot ${inkColor === p.color ? 'is-selected' : ''}`}
+            style={{ backgroundColor: p.color }}
+          />
+        ))}
+      </div>
+
+      {/* Font Toggle */}
+      <button
+        onClick={() => setFontStyle(fontStyle === 'handwriting' ? 'clean' : 'handwriting')}
+        className="tb-btn"
+        title="Toggle between handwritten ink and clean sans-serif typography"
+      >
+        <Type className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+        <span>{fontStyle === 'handwriting' ? 'Ink Font' : 'Sans Font'}</span>
+      </button>
+
+      {/* Sound Toggle */}
+      <button
+        onClick={() => setSoundEnabled(!soundEnabled)}
+        className="tb-icon-btn"
+        title={soundEnabled ? 'Mute Pen Tick Sound' : 'Enable Pen Tick Sound'}
+        aria-label={soundEnabled ? 'Mute Pen Tick Sound' : 'Enable Pen Tick Sound'}
+      >
+        {soundEnabled ? (
+          <Volume2 className="w-3.5 h-3.5 text-teal-400" />
+        ) : (
+          <VolumeX className="w-3.5 h-3.5 text-stone-500" />
+        )}
+      </button>
+    </>
+  );
+
   return (
-    <header className="no-print bg-stone-900 text-stone-100 border-b border-stone-800 shadow-md sticky top-0 z-40 px-4 py-2.5">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Branding & Sample/Clear Toggle */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-teal-600 animate-pulse" />
-            <span className="font-serif italic tracking-wide font-bold text-base md:text-lg">
-              Habit Tracker
-            </span>
-            <span className="text-xs bg-stone-800 text-stone-400 px-2 py-0.5 rounded-full border border-stone-700 hidden sm:inline-block">
-              A3 Landscape
-            </span>
-          </div>
-
-          <div className="h-5 w-px bg-stone-700 hidden md:block" />
-
-          {/* Sample Data / Clear Sheet Toggle Buttons */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <button
-              onClick={loadSample}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 transition-colors cursor-pointer"
-              title="Load sample habits and checkmarks"
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Sample Data</span>
-            </button>
-            <button
-              onClick={clearSheet}
-              className="flex items-center gap-1 px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 transition-colors cursor-pointer"
-              title="Clear all habits, checkmarks, and notes"
-            >
-              <Eraser className="w-3 h-3 text-stone-400" />
-              <span>Clear Sheet</span>
-            </button>
-          </div>
+    <header className="no-print tb-header">
+      {/* Row 1: Always clean & uncrowded on both Mobile & Desktop */}
+      <div className="tb-main-row">
+        {/* Brand */}
+        <div className="tb-brand">
+          <span className="tb-brand-dot animate-pulse" />
+          <span className="font-serif italic font-bold tb-brand-title">
+            Habit Tracker
+          </span>
+          <span className="tb-badge-a3">A3</span>
         </div>
 
-        {/* Center: Controls (Month + Leap Year, Ink Color, Font, Sound) */}
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          {/* Month Selector Dropdown + Leap-Year Toggle */}
-          <div className="flex items-center gap-1.5 bg-stone-800 px-2.5 py-1 rounded-md border border-stone-700">
-            <Calendar className="w-3.5 h-3.5 text-teal-400" />
-            <select
-              value={matchedMonth ? matchedMonth.name : ''}
-              onChange={handleMonthChange}
-              aria-label="Select Month"
-              className="bg-transparent text-stone-200 outline-none cursor-pointer pr-1"
-            >
-              {!matchedMonth && (
-                <option value="" className="bg-stone-800 text-white">
-                  {state.month || 'Custom'} ({state.monthType}d)
-                </option>
-              )}
-              {MONTHS.map((m) => (
-                <option key={m.name} value={m.name} className="bg-stone-800 text-white">
-                  {m.name} ({m.name === 'February' ? state.monthType === 29 ? '29d' : '28d' : `${m.days}d`})
-                </option>
-              ))}
-            </select>
-            {isFebruary && (
-              <button
-                onClick={handleLeapToggle}
-                className={`px-1.5 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                  state.monthType === 29
-                    ? 'bg-teal-700 text-white border-teal-700'
-                    : 'bg-stone-700 text-stone-300 border-stone-600'
-                }`}
-                title="Toggle Leap Year February (28 vs 29 days)"
-              >
-                {state.monthType === 29 ? 'Leap 29d' : '28d'}
-              </button>
-            )}
-          </div>
-
-          {/* Ink Color Picker */}
-          <div className="flex items-center gap-1 bg-stone-800 px-2 py-1 rounded-md border border-stone-700">
-            <Palette className="w-3.5 h-3.5 text-stone-400 mr-1" />
-            {INK_PALETTES.map((p) => (
-              <button
-                key={p.name}
-                onClick={() => setInkColor(p.color)}
-                title={p.name}
-                aria-label={p.name}
-                className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
-                  inkColor === p.color
-                    ? 'scale-125 border-white'
-                    : 'border-stone-600 opacity-70 hover:opacity-100'
-                }`}
-                style={{ backgroundColor: p.color }}
-              />
-            ))}
-          </div>
-
-          {/* Font Toggle */}
-          <button
-            onClick={() => setFontStyle(fontStyle === 'handwriting' ? 'clean' : 'handwriting')}
-            className="flex items-center gap-1 px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md border border-stone-700 transition-colors cursor-pointer"
-            title="Toggle between handwritten ink and clean sans-serif typography"
-          >
-            <Type className="w-3.5 h-3.5 text-stone-400" />
-            <span>{fontStyle === 'handwriting' ? 'Ink Font' : 'Sans Font'}</span>
-          </button>
-
-          {/* Sound Toggle */}
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md border border-stone-700 transition-colors cursor-pointer"
-            title={soundEnabled ? 'Mute Pen Tick Sound' : 'Enable Pen Tick Sound'}
-          >
-            {soundEnabled ? (
-              <Volume2 className="w-3.5 h-3.5 text-teal-400" />
-            ) : (
-              <VolumeX className="w-3.5 h-3.5 text-stone-500" />
-            )}
-          </button>
+        {/* Desktop-only center controls (single-row layout >= 1024px) */}
+        <div className="tb-desktop-controls">
+          {renderControlsCluster()}
         </div>
 
-        {/* Right: Stats, PNG, SVG, Print/PDF */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenStats}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md border border-stone-700 text-xs font-medium transition-colors cursor-pointer"
-          >
-            <BarChart2 className="w-3.5 h-3.5 text-teal-400" />
-            <span className="hidden sm:inline">Stats & Streaks</span>
+        {/* Right Actions */}
+        <div className="tb-actions">
+          <button onClick={onOpenStats} className="tb-btn" title="View Stats & Streaks">
+            <BarChart2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+            <span className="tb-stats-label-full">Stats & Streaks</span>
+            <span className="tb-stats-label-short">Stats</span>
           </button>
 
-          <div className="flex items-center gap-1">
+          <div className="tb-seg-group tb-desktop-export">
             <button
               onClick={handleExportPNG}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md border border-stone-700 text-xs transition-colors cursor-pointer"
+              className="tb-seg-btn"
               title="Download high-resolution A3 PNG"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 shrink-0" />
               <span>PNG</span>
             </button>
+            <div className="tb-seg-divider" />
             <button
               onClick={handleExportSVG}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md border border-stone-700 text-xs transition-colors cursor-pointer"
+              className="tb-seg-btn"
               title="Download Scalable Vector Graphics (SVG)"
             >
-              <Download className="w-3.5 h-3.5" />
               <span>SVG</span>
             </button>
           </div>
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-md font-medium text-xs shadow-sm transition-all cursor-pointer"
+            className="tb-print-btn"
             title="Print or Save as PDF (A3 Landscape)"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print / PDF</span>
+            <Printer className="w-3.5 h-3.5 shrink-0" />
+            <span className="tb-print-label-full">Print / PDF</span>
+            <span className="tb-print-label-short">PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Row 2: Mobile/Tablet scrollable control strip (< 1024px) */}
+      <div className="tb-mobile-strip">
+        {renderControlsCluster()}
+        <div className="tb-seg-group">
+          <button
+            onClick={handleExportPNG}
+            className="tb-seg-btn"
+            title="Download high-resolution A3 PNG"
+          >
+            <Download className="w-3.5 h-3.5 shrink-0" />
+            <span>PNG</span>
+          </button>
+          <div className="tb-seg-divider" />
+          <button
+            onClick={handleExportSVG}
+            className="tb-seg-btn"
+            title="Download Scalable Vector Graphics (SVG)"
+          >
+            <span>SVG</span>
           </button>
         </div>
       </div>

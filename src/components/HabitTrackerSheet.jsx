@@ -264,9 +264,9 @@ export default function HabitTrackerSheet({
 
     if (kind === 'month') {
       return {
-        x: 1005,
+        x: 1032,
         y: 52,
-        w: 240,
+        w: 216,
         h: 38,
         value: state.month || '',
         fontSizePx: isHand ? 32 : 22,
@@ -402,7 +402,7 @@ export default function HabitTrackerSheet({
         <defs>
           {/* Clip paths for clean text bounds inside bars/rows (for SVG/PNG export) */}
           <clipPath id="clip-month-line">
-            <rect x="1002" y="40" width="248" height="52" />
+            <rect x="1030" y="40" width="222" height="52" />
           </clipPath>
           {Array.from({ length: 10 }, (_, i) => {
             const yStart = CY - R_OUT + i * TRACK_H;
@@ -511,7 +511,7 @@ export default function HabitTrackerSheet({
           {/* Month Editable Text */}
           {!(activeEdit?.kind === 'month') && (
             <text
-              x="1010"
+              x="1036"
               y="84"
               fontSize={fontStyle === 'handwriting' ? '32' : '22'}
               fontWeight={fontStyle === 'handwriting' ? '700' : '600'}
@@ -524,9 +524,9 @@ export default function HabitTrackerSheet({
             </text>
           )}
           <rect
-            x="1002"
+            x="1028"
             y="42"
-            width="250"
+            width="226"
             height="48"
             fill="transparent"
             className="editable-zone-hover"
